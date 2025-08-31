@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'api',
+    'db',
 ]
 
 MIDDLEWARE = [
@@ -127,4 +129,17 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ]
+}
+
+AUTH_USER_MODEL = 'db.APIUser'
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'HOST': 'aws-1-ap-southeast-1.pooler.supabase.com',
+        'NAME': 'postgres',
+        'USER': 'postgres.aaotnqvnhazhtwkodsng',
+        'PORT': '6543',
+        'PASSWORD': 'AIAscent2025',
+    }
 }
