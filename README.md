@@ -45,17 +45,45 @@ The API Backend for AI Ascent SAP Hackathon.
   - Error (400): `{"error": "email is required"}`
   - Error (404): `{"error": "User not found"}` or `{"error": "No feedbacks found for this user"}`
 
+#### 3. Summarise Feedback
+- **URL**: `/api/summarise-feedback/`
+- **Method**: `POST`
+- **Description**: Provides a comprehensive summary of user feedback including classification and actionable insights.
+- **Request Body**:
+  ```json
+  {
+    "email": "user@example.com"
+  }
+  ```
+- **Response**:
+  - Success (200): 
+    ```json
+    {
+      "summary": {
+        "strengths_insights": ["Actionable insights based on strengths"],
+        "improvements_insights": ["Actionable insights based on improvements"],
+        "growth_tips": ["Helpful growth tips derived from the feedback"]
+      }
+    }
+    ```
+  - Error (400): `{"error": "email is required"}`
+  - Error (404): `{"error": "User not found"}` or `{"error": "No feedbacks found for this user"}`
+
 ## Agents
 
 The backend uses AI agents powered by LangChain for processing feedback.
 
 ### Feedback Agent
-- **Purpose**: Classifies user feedback into strengths and improvements.
+- **Purpose**: Processes and analyzes user feedback to provide classification and actionable insights.
+- **Features**:
+  - **Classification**: Categorizes feedback into strengths and improvements, filtering out biased or neutral content.
+  - **Insights Generation**: Creates actionable insights from classified feedback and provides growth tips.
 - **How it works**:
-  - Uses a structured output model to categorize feedback.
-  - Filters out biased feedback (related to gender, race, ethnicity, age, religion, disability, nationality, or culture) and neutral feedback.
-  - Returns concise, bulleted lists of strengths and areas for improvement.
-  - Utilizes a language model specified by the `FEEDBACK_MODEL` environment variable.
+  - Uses structured output models with Pydantic for consistent responses.
+  - Employs a pipeline approach: first classifies feedback, then generates insights based on the classification.
+  - Filters out feedback biased towards protected characteristics (gender, race, ethnicity, age, religion, disability, nationality, culture).
+  - Utilizes a language model specified by the `FEEDBACK_MODEL` environment variable with temperature 0.0 for consistency.
+  - Supports both individual classification and comprehensive summarization with insights.
 
 ### Coordinator Agent
 - **Purpose**: A general-purpose agent for coordination tasks (currently not integrated into the API endpoints).
