@@ -8,7 +8,7 @@ CORDINATOR_AGENT = None
 
 def get_coordinator_agent():
     """
-    This gets the cordinator agent if initialised, otherwise initialises and returns that.
+    This returns the cordinator agent if initialised, otherwise initialises and returns that.
 
     02:24 01/09/2025
     """
@@ -19,7 +19,8 @@ def get_coordinator_agent():
         CORDINATOR_AGENT = initialize_agent(
             tools=tools,
             llm=llm,
-            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            # Using a non-reasoning model, so contraining it with a structured and convo type is good
+            agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
             verbose=True,
             handle_parsing_errors=True,
         )
