@@ -2,7 +2,7 @@ import os
 from langchain.chat_models import init_chat_model
 from langchain.agents import initialize_agent, AgentType
 
-CORDINATOR_MODEL = os.getenv("CORDINATOR_LLM")
+CORDINATOR_MODEL = os.getenv("CORDINATOR_MODEL")
 CORDINATOR_AGENT = None
 
 
