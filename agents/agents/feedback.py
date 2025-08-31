@@ -1,7 +1,11 @@
 import os
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 FEEDBACK_MODEL = os.getenv("FEEDBACK_MODEL")
 FEEDBACK_LLM = None
@@ -15,8 +19,9 @@ def get_feedback_llm():
     03:07 01/09/2025
     """
 
+    global FEEDBACK_LLM
     if not FEEDBACK_LLM:
-        FEEDBACK_LLM = init_chat_model(model=FEEDBACK_MODEL)
+        FEEDBACK_LLM = init_chat_model(model=FEEDBACK_MODEL, temperature=0.0)
 
     return FEEDBACK_LLM
 
@@ -35,6 +40,7 @@ def get_classifier_llm():
     03:38 01/09/2025
     """
 
+    global STRUCT_LLM
     if not STRUCT_LLM:
         STRUCT_LLM = get_feedback_llm().with_structured_output(ClassifiedFeedback)
 
@@ -47,8 +53,9 @@ def classify_feedback(feedbacks: list):
 
     messages = [
         SystemMessage(
-            content="""Classify the feedback items into strengths and improvements.\
-                Remove any feedback items that seem to be biased towards gender or race, or is neutral."""
+            content="""Classify the feedback items into strengths and improvements. Be concise and bulleted.\
+                Remove any feedback items that seem to be biased towards gender, race, ethnicity, age,\
+                    religion, disability, nationality, or cultural; or is neutral."""
         ),
         HumanMessage(content=feedbacks_str),
     ]

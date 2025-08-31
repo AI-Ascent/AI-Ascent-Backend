@@ -1,6 +1,10 @@
 import os
 from langchain.chat_models import init_chat_model
 from langchain.agents import initialize_agent, AgentType
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 CORDINATOR_MODEL = os.getenv("CORDINATOR_MODEL")
 CORDINATOR_AGENT = None
@@ -13,6 +17,7 @@ def get_coordinator_agent():
     02:24 01/09/2025
     """
 
+    global CORDINATOR_AGENT
     if not CORDINATOR_AGENT:
         llm = init_chat_model(model=CORDINATOR_MODEL)
         tools = []
