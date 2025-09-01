@@ -69,6 +69,38 @@ The API Backend for AI Ascent SAP Hackathon.
   - Error (400): `{"error": "email is required"}`
   - Error (404): `{"error": "User not found"}` or `{"error": "No feedbacks found for this user"}`
 
+#### 4. Create Onboarding Item
+- **URL**: `/api/onboard/create/`
+- **Method**: `POST`
+- **Description**: Creates a new onboarding catalog item for job roles with associated checklists and resources.
+- **Request Body**:
+  ```json
+  {
+    "title": "Software Engineer",
+    "specialization": "Backend",
+    "tags": ["python", "django", "api"],
+    "checklist": ["Collect laptop from IT", "Complete coding assessment", "Review company policies", "Setup development environment"],
+    "resources": ["https://docs.djangoproject.com/", "https://www.python.org/", "Backend service map"]
+  }
+  ```
+- **Response**:
+  - Success (201): `{"message": "Onboarding item created successfully", "id": 1}`
+  - Error (400): `{"error": "title and specialization are required"}` or `{"error": "tags, checklist, and resources must be arrays"}`
+  - Error (500): `{"error": "Failed to create onboarding item: [error details]"}`
+
+## Features
+
+### Feedback Processing
+- Collect and store user feedback
+- AI-powered classification of feedback into strengths and improvements
+- Generation of actionable insights and growth tips
+- Bias filtering to ensure fair and inclusive feedback analysis
+
+### Onboarding Management
+- Create and manage onboarding catalogs for different job roles
+- Associate specializations, tags, checklists, and resources with each role
+- Support for structured onboarding processes with customizable checklists and learning resources
+
 ## Agents
 
 The backend uses AI agents powered by LangChain for processing feedback.
