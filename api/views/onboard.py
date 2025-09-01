@@ -2,6 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from db.models.onboard import OnboardCatalog
+from agents.agents.onboard import run_onboard_agent
+from db.models.user import APIUser
 
 class CreateOnboardView(APIView):
     def post(self, request):
@@ -40,3 +42,41 @@ class CreateOnboardView(APIView):
                 {"error": f"Failed to create onboarding item: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+class GetOnboardView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        additional_prompt = request.data.get("additional_prompt", "")
+        
+        if not email:
+            return Response(
+                {"error": "Email is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        try:
+            employee = APIUser.objects.get(email=email)
+        except APIUser.DoesNotExist:
+            return Response(
+                {"error": "Employee not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        job_title = employee.job_title
+        specialization = employee.specialization
+        if specialization:
+            base_query = f"{job_title} - {specialization}"
+        else:
+            base_query = job_title
+        full_query = f"{base_query} {additional_prompt}".strip()
+        
+        try:
+            result = run_onboard_agent(full_query)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to run onboard agent: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+

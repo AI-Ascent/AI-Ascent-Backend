@@ -5,9 +5,10 @@ from langchain.tools import tool
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.prompts import ChatPromptTemplate
 from db.models.onboard import OnboardCatalog
-from langchain_community.embeddings import SentenceTransformerEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from pgvector.django import CosineDistance
 from langchain_core.output_parsers import JsonOutputParser
+import json
 
 load_dotenv()
 
@@ -15,21 +16,21 @@ ONBOARD_MODEL = os.getenv("ONBOARD_MODEL")
 ONBOARD_LLM = None
 ONBOARD_AGENT = None
 
-ONBOARD_PROMPT = "You are an onboarding assistant. First, use the search tools (find_similar_job_titles, find_similar_specializations, find_jobs_with_relevant_tags) to explore relevant job information based on the query. Do not jump straight to get_job_details. If you find promising matches from the searches, then use get_job_details to retrieve full details for the top match. Compile the information into the required JSON format with keys: 'checklist' (array), 'resources' (array), and 'explanation' (string).\n{format_instructions}"
+ONBOARD_PROMPT = "You are an onboarding assistant. First, use the search tools (find_similar_job_titles, find_similar_specializations, find_jobs_with_relevant_tags) to explore relevant job information based on the query. Do not jump straight to get_job_details. If you find promising matches from the searches, then use get_job_details (repeatedly if multiple similar job titles and/or specialization and/or tags) to retrieve full details for similar jobs. If the job title is a nearly a perfect match, return exactly those details; if not, from the gathered information and various similar jobs and/or specialization and/or tags, you can create invent details from the gathered info. Compile the information into the required JSON format with keys: 'checklist' (array), 'resources' (array), and 'explanation' (string).\n{format_instructions}"
 
-embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 
 def create_onboard_llm():
     """
-    This returns the onboard llm if initialised, otherwise initialises and returns that.
+    This returns the onboard llm if initialized, otherwise initializes and returns that.
 
     05:23 01/09/2025
     """
 
     global ONBOARD_LLM
     if not ONBOARD_LLM:
-        ONBOARD_LLM = init_chat_model(ONBOARD_MODEL)
+        ONBOARD_LLM = init_chat_model(ONBOARD_MODEL, temperature=0.0)
 
     return ONBOARD_LLM
 
@@ -118,7 +119,7 @@ def get_job_details(job_title: str) -> str:
 
 def create_onboard_agent():
     """
-    This returns the onboard agent if initialised, otherwise initialises and returns that.
+    This returns the onboard agent if initialized, otherwise initializes and returns that.
     """
     global ONBOARD_AGENT
     if not ONBOARD_AGENT:
@@ -141,7 +142,7 @@ def create_onboard_agent():
             ]
         ).partial(format_instructions=parser.get_format_instructions())
         agent = create_tool_calling_agent(llm, tools, prompt)
-        ONBOARD_AGENT = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)  # Added handle_parsing_errors to improve robustness
+        ONBOARD_AGENT = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
 
     return ONBOARD_AGENT
 
@@ -152,7 +153,7 @@ def run_onboard_agent(query: str):
     """
     agent = create_onboard_agent()
     result = agent.invoke({"input": query})
-    
-    return result.get("output", {})
+
+    return json.loads(result.get("output", '{}'))
 
 

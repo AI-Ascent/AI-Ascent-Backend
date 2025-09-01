@@ -88,6 +88,30 @@ The API Backend for AI Ascent SAP Hackathon.
   - Error (400): `{"error": "title and specialization are required"}` or `{"error": "tags, checklist, and resources must be arrays"}`
   - Error (500): `{"error": "Failed to create onboarding item: [error details]"}`
 
+#### 5. Get Onboarding Information
+- **URL**: `/api/onboard/get/`
+- **Method**: `POST`
+- **Description**: Retrieves personalized onboarding information for an employee based on their job title and specialization using AI-powered semantic search.
+- **Request Body**:
+  ```json
+  {
+    "email": "employee@example.com",
+    "additional_prompt": "focus on the analytics part" // Optional
+  }
+  ```
+- **Response**:
+  - Success (200): 
+    ```json
+    {
+      "checklist": ["Complete coding assessment", "Setup development environment", "Review project documentation"],
+      "resources": ["https://docs.djangoproject.com/", "Internal wiki", "Team onboarding guide"],
+      "explanation": "Customized onboarding plan based on your role as Backend Developer"
+    }
+    ```
+  - Error (400): `{"error": "Email is required"}`
+  - Error (404): `{"error": "Employee not found"}`
+  - Error (500): `{"error": "Failed to run onboard agent: [error details]"}`
+
 ## Features
 
 ### Feedback Processing
@@ -99,6 +123,8 @@ The API Backend for AI Ascent SAP Hackathon.
 ### Onboarding Management
 - Create and manage onboarding catalogs for different job roles
 - Associate specializations, tags, checklists, and resources with each role
+- AI-powered semantic search to find relevant onboarding information
+- Personalized onboarding plans based on employee job titles and specializations
 - Support for structured onboarding processes with customizable checklists and learning resources
 
 ## Agents
@@ -116,6 +142,20 @@ The backend uses AI agents powered by LangChain for processing feedback.
   - Filters out feedback biased towards protected characteristics (gender, race, ethnicity, age, religion, disability, nationality, culture).
   - Utilizes a language model specified by the `FEEDBACK_MODEL` environment variable with temperature 0.0 for consistency.
   - Supports both individual classification and comprehensive summarization with insights.
+
+### Onboard Agent
+- **Purpose**: Provides personalized onboarding information using semantic search and AI reasoning.
+- **Features**:
+  - **Semantic Search**: Uses vector embeddings to find similar job titles, specializations, and tags
+  - **Intelligent Matching**: Combines multiple search strategies to find the most relevant onboarding content
+  - **Dynamic Content Generation**: Creates customized onboarding plans when exact matches aren't found
+- **How it works**:
+  - Utilizes HuggingFace embeddings for vector similarity search on job titles, specializations, and tags
+  - Employs a tool-calling agent with specialized search tools
+  - Searches for similar jobs using cosine distance on vector fields
+  - Compiles information from multiple similar roles to generate comprehensive onboarding materials
+  - Returns structured JSON with checklists, resources, and explanations
+  - Uses the language model specified by the `ONBOARD_MODEL` environment variable
 
 ### Coordinator Agent
 - **Purpose**: A general-purpose agent for coordination tasks (currently not integrated into the API endpoints).
