@@ -5,9 +5,8 @@ from langchain.tools import tool
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.prompts import ChatPromptTemplate
 from db.models.onboard import OnboardCatalog
-from langchain_huggingface import HuggingFaceEmbeddings
+from db.models.embeddings import embeddings
 from pgvector.django import CosineDistance
-from langchain_core.output_parsers import JsonOutputParser
 import json
 
 load_dotenv()
@@ -16,9 +15,7 @@ ONBOARD_MODEL = os.getenv("ONBOARD_MODEL")
 ONBOARD_LLM = None
 ONBOARD_AGENT = None
 
-ONBOARD_PROMPT = "You are an onboarding assistant. First, use the search tools (find_similar_job_titles, find_similar_specializations, find_jobs_with_relevant_tags) to explore relevant job information based on the query. Do not jump straight to get_job_details. If you find promising matches from the searches, then use get_job_details (repeatedly if multiple similar job titles and/or specialization and/or tags) to retrieve full details for similar jobs. If the job title is a nearly a perfect match, return exactly those details; if not, from the gathered information and various similar jobs and/or specialization and/or tags, you can create invent details from the gathered info. Compile the information into the required JSON format with keys: 'checklist' (array), 'resources' (array), and 'explanation' (string).\n{format_instructions}"
-
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+ONBOARD_PROMPT = "You are an onboarding assistant. First, use the search tools (find_similar_job_titles, find_similar_specializations, find_jobs_with_relevant_tags) to explore relevant job information based on the query. Do not jump straight to get_job_details. If you find promising matches from the searches, then use get_job_details (repeatedly if multiple similar job titles and/or specialization and/or tags) to retrieve full details for similar jobs. If the job title is a nearly a perfect match, return exactly those details and a blank explanation; if not, from the gathered information and various similar jobs and/or specialization and/or tags, you can create invent details from the gathered info. Compile the information into the required JSON format with keys: 'checklist' (array), 'resources' (array), and 'explanation' (string)."
 
 
 def create_onboard_llm():
@@ -30,7 +27,7 @@ def create_onboard_llm():
 
     global ONBOARD_LLM
     if not ONBOARD_LLM:
-        ONBOARD_LLM = init_chat_model(ONBOARD_MODEL, temperature=0.0)
+        ONBOARD_LLM = init_chat_model(ONBOARD_MODEL)
 
     return ONBOARD_LLM
 
@@ -130,7 +127,6 @@ def create_onboard_agent():
             find_jobs_with_relevant_tags,
             get_job_details,
         ]
-        parser = JsonOutputParser()
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -140,7 +136,7 @@ def create_onboard_agent():
                 ("human", "{input}"),
                 ("placeholder", "{agent_scratchpad}"),
             ]
-        ).partial(format_instructions=parser.get_format_instructions())
+        )
         agent = create_tool_calling_agent(llm, tools, prompt)
         ONBOARD_AGENT = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
 

@@ -1,9 +1,7 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from pgvector.django import VectorField 
-from langchain_huggingface import HuggingFaceEmbeddings
-
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+from db.models.embeddings import embeddings
 
 class OnboardCatalog(models.Model):
     title = models.CharField(max_length=255, verbose_name="Job Title")
