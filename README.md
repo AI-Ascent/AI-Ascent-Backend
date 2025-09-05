@@ -6,7 +6,24 @@ The API Backend for AI Ascent SAP Hackathon.
 
 ### Endpoints
 
-#### 1. Add Feedback
+#### 1. User Authentication
+- **URL**: `/api/login/`
+- **Method**: `POST`
+- **Description**: Authenticates a user with email and password.
+- **Request Body**:
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "userpassword"
+  }
+  ```
+- **Response**:
+  - Success (200): `{"message": "Authentication successful."}`
+  - Error (400): `{"error": "Email and password are required."}`
+  - Error (401): `{"error": "Invalid password."}`
+  - Error (404): `{"error": "User not found."}`
+
+#### 2. Add Feedback
 - **URL**: `/api/add-feedback/`
 - **Method**: `POST`
 - **Description**: Adds a new feedback item to a user's feedback list.
@@ -22,7 +39,7 @@ The API Backend for AI Ascent SAP Hackathon.
   - Error (400): `{"error": "email and feedback are required"}`
   - Error (404): `{"error": "User not found"}`
 
-#### 2. Classify Feedback
+#### 3. Classify Feedback
 - **URL**: `/api/classify-feedback/`
 - **Method**: `POST`
 - **Description**: Classifies all feedback items for a user into strengths and improvements using AI.
@@ -45,7 +62,7 @@ The API Backend for AI Ascent SAP Hackathon.
   - Error (400): `{"error": "email is required"}`
   - Error (404): `{"error": "User not found"}` or `{"error": "No feedbacks found for this user"}`
 
-#### 3. Summarise Feedback
+#### 4. Summarise Feedback
 - **URL**: `/api/summarise-feedback/`
 - **Method**: `POST`
 - **Description**: Provides a comprehensive summary of user feedback including classification and actionable insights.
@@ -60,6 +77,8 @@ The API Backend for AI Ascent SAP Hackathon.
     ```json
     {
       "summary": {
+        "strengths": ["List of strengths"],
+        "improvements": ["List of improvements"],
         "strengths_insights": ["Actionable insights based on strengths"],
         "improvements_insights": ["Actionable insights based on improvements"],
         "growth_tips": ["Helpful growth tips derived from the feedback"]
@@ -69,7 +88,7 @@ The API Backend for AI Ascent SAP Hackathon.
   - Error (400): `{"error": "email is required"}`
   - Error (404): `{"error": "User not found"}` or `{"error": "No feedbacks found for this user"}`
 
-#### 4. Create Onboarding Item
+#### 5. Create Onboarding Item
 - **URL**: `/api/onboard/create/`
 - **Method**: `POST`
 - **Description**: Creates a new onboarding catalog item for job roles with associated checklists and resources.
@@ -88,7 +107,7 @@ The API Backend for AI Ascent SAP Hackathon.
   - Error (400): `{"error": "title and specialization are required"}` or `{"error": "tags, checklist, and resources must be arrays"}`
   - Error (500): `{"error": "Failed to create onboarding item: [error details]"}`
 
-#### 5. Get Onboarding Information
+#### 6. Get Onboarding Information
 - **URL**: `/api/onboard/get/`
 - **Method**: `POST`
 - **Description**: Retrieves personalized onboarding information for an employee based on their job title and specialization using AI-powered semantic search.
@@ -113,6 +132,11 @@ The API Backend for AI Ascent SAP Hackathon.
   - Error (500): `{"error": "Failed to run onboard agent: [error details]"}`
 
 ## Features
+
+### User Authentication
+- Secure user login with email and password
+- User management with custom APIUser model
+- Password hashing and validation
 
 ### Feedback Processing
 - Collect and store user feedback
