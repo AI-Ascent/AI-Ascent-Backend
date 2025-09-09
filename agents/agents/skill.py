@@ -21,18 +21,19 @@ SKILL_AGENT = None
 
 SKILL_PROMPT = """You are a skill development assistant. Your goal is to help users find relevant learning resources and skills based on their query.
 
-Primarily use the skill catalog search tools (find_similar_skill_titles, find_similar_skill_types, find_skills_with_relevant_tags) to explore relevant skills and resources based on the user's query. If you find promising matches, use get_skill_details to retrieve full information.
+Primarily use the skill catalog search tools (find_similar_skill_titles, find_similar_skill_types, find_skills_with_relevant_tags) to explore relevant skills and resources based on the user's query. At the end, with relevant skill titles found, use get_skill_details (multiple times if needed but atleast once) to retrieve more information to get URL of that resource (Title, Type, Tags, URL, Similarity).
 
-Only use the tavily_search tool sparingly and as a last resort if the skill catalog has no relevant information or you need very specific current data that isn't available internally. Avoid over-relying on external searches to keep recommendations focused on the catalog.
+Only use the tavily_search tool sparingly if the skill catalog has no relevant information or you need very specific current data that isn't available internally. Avoid over-relying on external searches to keep recommendations focused on the catalog.
 
 When providing recommendations, consider any user feedback insights provided in the query to suggest skills that address their improvement areas and build upon their strengths.
 
 Compile all gathered information into a JSON format with keys:
 - 'skills' (array of recommended skills/topics)
-- 'resources' (array of learning resources with URLs)
+- 'resources' (array of learning resources with URLs taken by searching online or calling get_skill_details for them)
 - 'explanation' (string explaining the recommendations)
 
-Try to be as quick and concise and possible using the least amount of tool calls and iterations.
+Do not invent any new resources or use placeholder/examples for resources. If you need resources for something not in the skill catalog, use tavily_search tool.
+Try to be as quick and concise and possible using the least amount of finding tool calls and iterations.
 Focus on actionable, practical learning resources and current industry-relevant skills."""
 
 
@@ -120,21 +121,24 @@ def find_skills_with_relevant_tags(tags: str) -> str:
 @tool
 def get_skill_details(skill_title: str) -> str:
     """
-    Get full details of the most similar skill by title using fuzzy vector search.
+    Get full details of the 3 most similar skill by title using fuzzy vector search.
     Input: A string representing the skill title to search for.
     Output: A formatted string with details of the top matching skill.
     """
     similar_skills = vector_fuzzy_search(skill_title, "title_vector", threshold=0.8)
     if similar_skills:
-        skill = similar_skills[0]
-        details = f"""
-        Title: {skill.title}
-        Type: {skill.type}
-        Tags: {', '.join(skill.tags) if skill.tags else 'N/A'}
-        URL: {skill.url}
-        Similarity: {1 - skill.distance:.2f}
-        """
-        return details.strip()
+        details = []
+        for i in range(3):
+            skill = similar_skills[i]
+            details.append(f"""
+            Title: {skill.title}
+            Type: {skill.type}
+            Tags: {', '.join(skill.tags) if skill.tags else 'N/A'}
+            URL: {skill.url}
+            Similarity: {1 - skill.distance:.2f}
+            """)
+
+        return "\n------\n".join(details)
     else:
         return f"No similar skill found for '{skill_title}'."
 
@@ -196,7 +200,7 @@ def create_skill_agent():
             tools=tools,
             verbose=True,
             handle_parsing_errors=True,
-            max_iterations=5,
+            max_iterations=8,
             early_stopping_method="force",  # Added to force stop on max iterations
             return_intermediate_steps=True,
         )
