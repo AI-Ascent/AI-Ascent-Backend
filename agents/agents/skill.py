@@ -19,6 +19,7 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 SKILL_LLM = None
 SKILL_AGENT = None
 
+
 SKILL_PROMPT = """You are a skill development assistant. Your goal is to help users find relevant learning resources and skills based on their query.
 
 Primarily use the skill catalog search tools (find_similar_skill_titles, find_similar_skill_types, find_skills_with_relevant_tags) to explore relevant skills and resources based on the user's query. At the end, with relevant skill titles found, use get_skill_details (multiple times if needed but atleast once) to retrieve the specific URL of that resource.
@@ -27,10 +28,7 @@ Only use the tavily_search tool sparingly if the skill catalog has no relevant i
 
 When providing recommendations, consider any user feedback insights provided in the query to suggest skills that address their improvement areas and build upon their strengths.
 
-Compile all gathered information into a JSON format with keys:
-- 'skills' (array of recommended skills/topics)
-- 'resources' (array of learning resources with URLs taken by searching online or calling get_skill_details for them)
-- 'explanation' (string explaining the recommendations)
+Compile all gathered information into a JSON format. The JSON object should have a 'skills' array, where each item has 'title', 'description', 'learning_outcomes', and a 'resources' array. Each resource should have 'title', 'url', and 'type'. Also include an 'explanation' string.
 
 Do not invent any new resources or use placeholder/examples for resources. If you need resources for something not in the skill catalog, use tavily_search tool and prioritize free ones.
 Try to be as quick and concise and possible using the least amount of finding tool calls and iterations.
@@ -40,6 +38,7 @@ Focus on actionable, practical learning resources and current industry-relevant 
 def create_skill_llm():
     """
     This returns the skill llm if initialized, otherwise initializes and returns that.
+    The LLM is configured for structured output based on the SkillResponse model.
     """
     global SKILL_LLM
     if not SKILL_LLM:
@@ -130,13 +129,15 @@ def get_skill_details(skill_title: str) -> str:
         details = []
         for i in range(3):
             skill = similar_skills[i]
-            details.append(f"""
+            details.append(
+                f"""
             Title: {skill.title}
             Type: {skill.type}
             Tags: {', '.join(skill.tags) if skill.tags else 'N/A'}
             URL: {skill.url}
             Similarity: {1 - skill.distance:.2f}
-            """)
+            """
+            )
 
         return "\n------\n".join(details)
     else:
@@ -234,7 +235,7 @@ def run_skill_agent(query: str, email: str = None):
             steps_text = "\n".join(
                 [f"Step {i+1}: {step}" for i, step in enumerate(intermediate_steps)]
             )
-            summarization_prompt = f"Based on the reasoning so far:\n{steps_text}\n\nProvide the best possible final answer in JSON format with keys: 'skills', 'resources', 'explanation'."
+            summarization_prompt = f"Based on the reasoning so far:\n{steps_text}\n\nCompile all gathered information into a JSON format. The JSON object should have a 'skills' array, where each item has 'title', 'description', 'learning_outcomes', and a 'resources' array. Each resource should have 'title', 'url', and 'type'. Also include an 'explanation' string."
 
             # Use the LLM to generate a summary
             llm = create_skill_llm()
