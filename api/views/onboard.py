@@ -64,14 +64,9 @@ class GetOnboardView(APIView):
         
         job_title = employee.job_title
         specialization = employee.specialization
-        if specialization:
-            base_query = f"{job_title} - {specialization}"
-        else:
-            base_query = job_title
-        full_query = f"{base_query} {additional_prompt}".strip()
         
         try:
-            result = run_onboard_agent(full_query)
+            result = run_onboard_agent(additional_prompt, job_title, specialization)
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
