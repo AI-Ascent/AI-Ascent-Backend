@@ -4,26 +4,22 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableLambda
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+from db.models.embeddings import sentiment_analysis
 
 load_dotenv()
 
 
 FEEDBACK_MODEL = os.getenv("FEEDBACK_MODEL")
 FEEDBACK_LLM = None
-STRUCT_LLM = None
 INSIGHTS_LLM = None
 
-CLASSIFIER_PROMPT = """Classify the feedback items into strengths and improvements. Be concise and bulleted.\
-                Remove any feedback items that seem to be biased towards gender, race, ethnicity, age,\
-                    religion, disability, nationality, or cultural; or is neutral."""
-
-INSIGHTS_PROMPT = "Based on the following strengths and improvements, generate actionable insights for\
+INSIGHTS_PROMPT = "Based on the following rough raw strengths and improvements, generate actionable insights for\
     strengths, improvements, and growth tips. Fill the structured fields accordingly."
 
 
 def get_feedback_llm():
     """
-    This returns the feedback agent if initialised, otherwise initialises and returns that.
+    This returns the feedback agent if initialized, otherwise initializes and returns that.
 
     03:07 01/09/2025
     """
@@ -35,39 +31,20 @@ def get_feedback_llm():
     return FEEDBACK_LLM
 
 
-class ClassifiedFeedback(BaseModel):
-    strengths: list[str] = Field(description="The strengths or this person / employee")
-    improvements: list[str] = Field(
-        description="The improvements this person / employee can work on"
-    )
-
-
-def get_classifier_llm():
-    """
-    This returns the struct classifier agent if initialised, otherwise initialises and returns that.
-
-    03:38 01/09/2025
-    """
-
-    global STRUCT_LLM
-    if not STRUCT_LLM:
-        STRUCT_LLM = get_feedback_llm().with_structured_output(ClassifiedFeedback)
-
-    return STRUCT_LLM
-
-
 def classify_feedback(feedbacks: list):
 
-    feedbacks_str = "|".join(feedbacks)
+    classified = {"strengths": [], "improvements": []}
 
-    messages = [
-        SystemMessage(content=CLASSIFIER_PROMPT),
-        HumanMessage(content=feedbacks_str),
-    ]
+    for text in feedbacks:
+        result = sentiment_analysis(text)
+        data = result[0]
 
-    struct_class_llm = get_classifier_llm()
-    result = struct_class_llm.invoke(messages)
-    return result.model_dump()
+        if data["label"] == "positive":
+            classified["strengths"].append(text)
+        else:
+            classified["improvements"].append(text)
+
+    return classified
 
 
 class FeedbackInsights(BaseModel):
@@ -84,7 +61,7 @@ class FeedbackInsights(BaseModel):
 
 def get_structured_insights_llm():
     """
-    This returns the insights LLM with structured output if initialised, otherwise initialises and returns that.
+    This returns the insights LLM with structured output if initialized, otherwise initializes and returns that.
     """
     global INSIGHTS_LLM
     if not INSIGHTS_LLM:
