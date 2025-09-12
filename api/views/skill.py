@@ -4,7 +4,7 @@ from rest_framework import status
 from db.models.skill import SkillCatalog
 from agents.agents.skill import run_skill_agent
 from db.models.user import APIUser
-from agents.agents.safety import check_prompt_safety
+from agents.agents.safety import check_prompt_safety, redact_pii
 
 
 class CreateSkillView(APIView):
@@ -69,6 +69,8 @@ class GetSkillRecommendationsView(APIView):
 
         # Construct the full query
         full_query = f"{user_context}{skill_query}"
+
+        full_query = redact_pii(full_query)
 
         try:
             result = run_skill_agent(full_query.strip(), email)

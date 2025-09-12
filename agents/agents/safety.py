@@ -12,6 +12,7 @@ from transformers import pipeline
 from dotenv import load_dotenv
 from huggingface_hub import login
 import os
+import re
 
 load_dotenv()
 login(token=os.getenv("HF_TOKEN"))
@@ -107,3 +108,29 @@ def check_prompt_safety(prompt: str) -> bool:
         return False
     else:
         return True
+
+
+def redact_pii(prompt: str) -> str:
+    """
+    Redacts Personal Identifiable Information (PII) from a given prompt string.
+    Currently redacts emails and phone numbers.
+
+    Args:
+        prompt (str): The input string to redact.
+
+    Returns:
+        str: The prompt with PII replaced by placeholders.
+    """
+    # Regex for emails
+    prompt = re.sub(
+        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+        "[REDACTED_EMAIL]",
+        prompt,
+    )
+
+    # Regex for phone numbers (handles various common formats)
+    prompt = re.sub(
+        r"(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})", "[REDACTED_PHONE]", prompt
+    )
+
+    return prompt

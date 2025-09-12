@@ -4,7 +4,7 @@ from rest_framework import status
 from db.models.onboard import OnboardCatalog
 from agents.agents.onboard import run_onboard_agent
 from db.models.user import APIUser
-from agents.agents.safety import check_prompt_safety
+from agents.agents.safety import check_prompt_safety, redact_pii
 
 
 class CreateOnboardView(APIView):
@@ -77,6 +77,8 @@ class GetOnboardView(APIView):
                 {"message": "Prompt is not safe for further processing or LLM!"},
                 status=status.HTTP_406_NOT_ACCEPTABLE,
             )
+        
+        additional_prompt = redact_pii(additional_prompt)
 
         job_title = employee.job_title
         specialization = employee.specialization

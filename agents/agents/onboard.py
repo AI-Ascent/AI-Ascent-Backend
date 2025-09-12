@@ -24,7 +24,7 @@ If the job title is a nearly a perfect match, return exactly those details and a
 if not, from the gathered information and various similar jobs and/or specialization and/or tags,\
 you can create invent details from the gathered info. Compile the information into the required JSON format with keys:\
 'checklist' (array), 'resources' (array), and 'explanation' (string).\
-Use only the tools provided. If you intend to use a tool that is NOT in the provided list,\
+Use only the tools provided. You are not able to any JSON related tools. If you intend to use a tool that is NOT in the provided list,\
 call the tool named 'noop_func' instead with a short note describing what you wanted to do."
 
 
