@@ -5,6 +5,7 @@ from langchain_core.runnables import RunnableLambda
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from db.models.embeddings import sentiment_analysis
+from agents.agents.safety import filter_feedback_for_bias
 
 load_dotenv()
 
@@ -33,9 +34,10 @@ def get_feedback_llm():
 
 def classify_feedback(feedbacks: list):
 
+    cleaned_feedbacks = filter_feedback_for_bias(feedbacks)["safe_feedback"]
     classified = {"strengths": [], "improvements": []}
 
-    for text in feedbacks:
+    for text in cleaned_feedbacks:
         result = sentiment_analysis(text)
         data = result[0]
 
