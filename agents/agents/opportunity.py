@@ -6,7 +6,7 @@ Checks the users skill - strengths and improvements needed | Check the skill loo
 
 2. Uses the skills the user has (so use user input) to find more relevant roles in the company. (this is to keep talent within the company and not waste resources spent on this person) (Have multiple filters for the user to use)
 i. Filters: Money, level, sort by particular skill, etc
-Use the above skill profile (from the user and feedback cuz why not) and vector based cosine scoring to get / find similar skill to fnd roles with similar skills.
+Use the above skill profile (from the user and feedback cuz why not) and vector based cosine scoring to get / find similar skill to fnd roles with similar skills. You can also use the llm here for whateevr need.
 
 Model to store open roles in the company with the skills for it and other stuff needed.
 """
@@ -16,14 +16,12 @@ from django.db.models import Q
 from pgvector.django import CosineDistance
 from db.models.user import APIUser
 from db.models.embeddings import embeddings
-from db.models.role import OpenRole
-import numpy as np
 import os
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
-from agents.agents.safety import check_prompt_safety, redact_pii
+from agents.agents.safety import check_prompt_safety
 
 
 load_dotenv()
