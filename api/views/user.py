@@ -71,6 +71,9 @@ class SummariseFeedbackView(APIView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
             summary = summarise_feedback_points(user.feedbacks)
+            user.strengths = summary["strengths_insights"]
+            user.improvements = summary["improvements_insights"]
+            user.save()
             return Response(
                 {"summary": summary}, status=status.HTTP_200_OK
             )
