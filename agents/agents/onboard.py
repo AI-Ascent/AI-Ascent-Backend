@@ -23,7 +23,9 @@ If you find promising matches from the searches, then use get_job_details\
 If the job title is a nearly a perfect match, return exactly those details and a blank explanation;\
 if not, from the gathered information and various similar jobs and/or specialization and/or tags,\
 you can create invent details from the gathered info. Compile the information into the required JSON format with keys:\
-'checklist' (array), 'resources' (array), and 'explanation' (string)."
+'checklist' (array), 'resources' (array), and 'explanation' (string).\
+Use only the tools provided. If you intend to use a tool that is NOT in the provided list,\
+call the tool named 'noop_func' instead with a short note describing what you wanted to do."
 
 
 def create_onboard_llm():
@@ -54,6 +56,15 @@ def vector_fuzzy_search(query: str, vector_field: str, threshold: float = 0.8) -
         .order_by("distance")[:3]
     )  # Lower distance = higher similarity
     return similar_items
+
+
+@tool
+def noop_func(tool_input: str = "", *args) -> str:
+    """
+    Fallback tool: called when a requested tool is not available. Returns a skip message.
+    """
+
+    return "[SKIPPED TOOL] The agent attempted to call a tool that is not available."
 
 
 @tool
@@ -123,19 +134,6 @@ def get_job_details(job_title: str) -> str:
         return f"No similar job found for '{job_title}'."
 
 
-@tool
-def process_json_string(json_string: str = "") -> str:
-    """Parses a JSON string and returns the data. Useful for parsing and formatting JSON strings.
-    Input: A json string
-    Output: A formatted and indented JSON string corresponding to that string
-    """
-    try:
-        data = json.loads(json_string)
-        return json.dumps(data, indent=2)
-    except json.JSONDecodeError:
-        return "Invalid JSON string provided."
-
-
 def get_job_details_title_spec(job_title: str, specialization: str = "N/A") -> str:
     """
     Get full details of the most similar job by title and specialization using fuzzy vector search, including title, specialization, tags, checklist, and resources.
@@ -149,8 +147,8 @@ def get_job_details_title_spec(job_title: str, specialization: str = "N/A") -> s
     )
 
     if not specialization:
-        specialization = 'N/A'
-    
+        specialization = "N/A"
+
     # Search for similar jobs by specialization
     similar_jobs_by_spec = vector_fuzzy_search(
         specialization, "specialization_vector", threshold=0.8
@@ -166,7 +164,7 @@ def get_job_details_title_spec(job_title: str, specialization: str = "N/A") -> s
         details = {
             "checklist": job.checklist,
             "resources": job.resources,
-            "explanation": f"Near Exact match found with similarity of {1 - job.distance}"
+            "explanation": f"Near Exact match found with similarity of {1 - job.distance}",
         }
 
         return details
@@ -186,7 +184,7 @@ def create_onboard_agent():
             find_similar_specializations,
             find_jobs_with_relevant_tags,
             get_job_details,
-            process_json_string
+            noop_func,
         ]
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -200,7 +198,12 @@ def create_onboard_agent():
         )
         agent = create_tool_calling_agent(llm, tools, prompt)
         ONBOARD_AGENT = AgentExecutor(
-            agent=agent, tools=tools, verbose=True, handle_parsing_errors=True
+            agent=agent,
+            tools=tools,
+            verbose=True,
+            handle_parsing_errors=True,
+            return_intermediate_steps=True,
+            early_stopping_method="generate",
         )
 
     return ONBOARD_AGENT
@@ -222,7 +225,7 @@ def run_onboard_agent(
         if job_details:
             return job_details
         else:
-            pass # No good similar job
+            pass  # No good similar job
 
     if specialization:
         base_query = f"{job_title} - {specialization}"
@@ -233,5 +236,7 @@ def run_onboard_agent(
 
     agent = create_onboard_agent()
     result = agent.invoke({"input": full_query})
+    print(result)
+    print("\n\n\n\n\n", result.get("output", "{}"))
 
     return json.loads(result.get("output", "{}"))
