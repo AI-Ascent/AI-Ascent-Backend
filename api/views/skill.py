@@ -4,6 +4,7 @@ from rest_framework import status
 from db.models.skill import SkillCatalog
 from agents.agents.skill import run_skill_agent
 from db.models.user import APIUser
+from agents.agents.safety import check_prompt_safety
 
 
 class CreateSkillView(APIView):
@@ -47,12 +48,17 @@ class GetSkillRecommendationsView(APIView):
     def post(self, request):
         email = request.data.get("email")
         skill_query = request.data.get("skill_query")
-        additional_prompt = request.data.get("additional_prompt", "")
 
         if not skill_query:
             return Response(
                 {"error": "skill_query is required"},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not check_prompt_safety(skill_query):
+            return Response(
+                {"message": "Prompt is not safe for further processing or LLM!"},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
             )
 
         employee = APIUser.objects.get(email=email)
@@ -63,8 +69,6 @@ class GetSkillRecommendationsView(APIView):
 
         # Construct the full query
         full_query = f"{user_context}{skill_query}"
-        if additional_prompt:
-            full_query += f" {additional_prompt}"
 
         try:
             result = run_skill_agent(full_query.strip(), email)
