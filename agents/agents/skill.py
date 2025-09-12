@@ -30,7 +30,7 @@ When providing recommendations, consider any user feedback insights provided in 
 
 Compile all gathered information into a JSON format. The JSON object should have a 'skills' array, where each item has 'title', 'description', 'learning_outcomes', and a 'resources' array. Each resource should have 'title', 'url', and 'type'. Also include an 'explanation' string.
 
-Do not invent any new resources or use placeholder/examples for resources. If you need resources for something not in the skill catalog, use tavily_search tool and prioritize free ones.
+Do not invent any new resources or use placeholder/examples for resources (so no example.com or similar urls). If you need resources for something not in the skill catalog, use tavily_search tool and prioritize free ones.
 Try to be as quick and concise and possible using the least amount of finding tool calls and iterations.
 Focus on actionable, practical learning resources and current industry-relevant skills."""
 
