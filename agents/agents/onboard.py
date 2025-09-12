@@ -124,7 +124,7 @@ def get_job_details(job_title: str) -> str:
 
 
 @tool
-def process_json_string(json_string: str) -> str:
+def process_json_string(json_string: str = "") -> str:
     """Parses a JSON string and returns the data. Useful for parsing and formatting JSON strings.
     Input: A json string
     Output: A formatted and indented JSON string corresponding to that string
