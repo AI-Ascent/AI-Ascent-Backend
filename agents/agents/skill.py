@@ -11,6 +11,7 @@ from db.models.embeddings import embeddings
 from pgvector.django import CosineDistance
 from agents.agents.feedback import classify_feedback
 import json
+from django.core.cache import cache
 
 load_dotenv()
 
@@ -225,6 +226,11 @@ def run_skill_agent(query: str, email: str = None):
     Runs the skill agent with the given query and email, returns the JSON response.
     If email is provided, automatically gets feedback insights for personalization.
     """
+    cache_key = f"skill_agent_{email}_{query}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
     agent = create_skill_agent()
 
     # If email is provided, enhance the query with feedback insights
@@ -265,4 +271,6 @@ def run_skill_agent(query: str, email: str = None):
 
     json_substring = output[start : end + 1]
 
-    return json.loads(json_substring)
+    final_result = json.loads(json_substring)
+    cache.set(cache_key, final_result, timeout=172800)
+    return final_result

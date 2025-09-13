@@ -3,9 +3,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from agents.agents.cordinator import invoke_coordinator
 from db.models.user import APIUser
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 
 
 class CoordinatorView(APIView):
+    @method_decorator(cache_page(60 * 60 * 24 * 2))  # Cache for 2 days
     def post(self, request):
         email = request.data.get("email")
         query = request.data.get("query")

@@ -12,6 +12,7 @@ from agents.agents.opportunity import find_mentors_for_improvements
 from agents.agents.feedback import classify_feedback, summarise_feedback_points
 from agents.agents.safety import filter_feedback_for_bias
 from db.models.user import APIUser
+from django.core.cache import cache
 
 load_dotenv()
 
@@ -101,22 +102,10 @@ def get_cordinator_LLM():
     return CORDINATOR_LLM
 
 
-def invoke_coordinator(user_input: str, user_email: str) -> str:
+def get_coordinator_agent_executor(user_email: str):
     """
-    Invokes the coordinator agent with user input and optional user email.
-
-    The coordinator routes the query to appropriate sub-agents and composes a response.
-    User email is used internally for personalized tools without exposing it to the LLM.
-
-    Args:
-        user_input (str): The user's query or request.
-        user_email (str): User's email for personalized features like mentor finding.
-
-    Returns:
-        str: The composed response from the coordinator agent in JSON format.
+    Initializes and returns a AgentExecutor for the coordinator.
     """
-    enhanced_input = user_input
-
     # Create tools dynamically with email context
     @tool
     def onboard_agent_tool(query: str) -> str:
@@ -252,7 +241,6 @@ def invoke_coordinator(user_input: str, user_email: str) -> str:
         except Exception as e:
             return f"Error in feedback summarization: {str(e)}. Unable to generate feedback insights."
 
-    # Initialize LLM and create agent
     llm = get_cordinator_LLM()
     tools = [
         onboard_agent_tool,
@@ -271,7 +259,30 @@ def invoke_coordinator(user_input: str, user_email: str) -> str:
     agent = create_tool_calling_agent(llm, tools, prompt)
     executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-    result = executor.invoke({"input": enhanced_input})
+    return executor
+
+
+def invoke_coordinator(user_input: str, user_email: str) -> str:
+    """
+    Invokes the coordinator agent with user input and optional user email.
+
+    The coordinator routes the query to appropriate sub-agents and composes a response.
+    User email is used internally for personalized tools without exposing it to the LLM.
+
+    Args:
+        user_input (str): The user's query or request.
+        user_email (str): User's email for personalized features like mentor finding.
+
+    Returns:
+        str: The composed response from the coordinator agent in JSON format.
+    """
+    cache_key = f"coordinator_response_{user_email}_{user_input}"
+    cached_response = cache.get(cache_key)
+    if cached_response:
+        return cached_response
+
+    executor = get_coordinator_agent_executor(user_email)
+    result = executor.invoke({"input": user_input})
 
     # Extract the JSON output from the text response
     output_text: str = result["output"]
@@ -279,7 +290,8 @@ def invoke_coordinator(user_input: str, user_email: str) -> str:
     try:
         json_str = output_text[output_text.find("{") : output_text.rfind("}") + 1]
         json_obj = json.loads(json_str)
-        return json_obj  # Return formatted JSON string
+        cache.set(cache_key, json_obj, timeout=172800)  # Cache for 2 days
+        return json_obj
     except json.JSONDecodeError:
         # If JSON is malformed, ask the LLM to fix it
         fix_prompt = ChatPromptTemplate.from_messages(
@@ -300,9 +312,11 @@ def invoke_coordinator(user_input: str, user_email: str) -> str:
             ]
         )
 
-        fix_chain = fix_prompt | llm
+        fix_chain = fix_prompt | get_cordinator_LLM()
         fixed_result = fix_chain.invoke({"json_str": json_str})
         fixed_json = fixed_result.content
 
         fixed_json_str = fixed_json[fixed_json.find("{") : fixed_json.rfind("}") + 1]
-        return json.loads(fixed_json_str)
+        final_json = json.loads(fixed_json_str)
+        cache.set(cache_key, final_json, timeout=172800)
+        return final_json

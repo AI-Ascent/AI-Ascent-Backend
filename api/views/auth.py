@@ -19,4 +19,3 @@ class AuthenticateUser(APIView):
                 return Response({"error": "Invalid password."}, status=status.HTTP_401_UNAUTHORIZED)
         except APIUser.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-        

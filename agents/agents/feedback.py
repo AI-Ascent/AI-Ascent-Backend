@@ -1,4 +1,5 @@
 import os
+import json
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableLambda
@@ -6,6 +7,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from db.models.embeddings import sentiment_analysis
 from agents.agents.safety import filter_feedback_for_bias
+from django.core.cache import cache
 
 load_dotenv()
 
@@ -33,6 +35,10 @@ def get_feedback_llm():
 
 
 def classify_feedback(feedbacks: list):
+    cache_key = f"classify_feedback_{hash(tuple(feedbacks))}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
 
     cleaned_feedbacks = filter_feedback_for_bias(feedbacks)["safe_feedback"]
     classified = {"strengths": [], "improvements": []}
@@ -46,6 +52,7 @@ def classify_feedback(feedbacks: list):
         else:
             classified["improvements"].append(text)
 
+    cache.set(cache_key, classified, timeout=3600)  # Cache for 1 hour
     return classified
 
 
@@ -72,6 +79,11 @@ def get_structured_insights_llm():
 
 
 def generate_insights(classified: dict) -> dict:
+    cache_key = f"generate_insights_{hash(json.dumps(classified, sort_keys=True))}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
     content = f"Strengths: {classified['strengths']}\nImprovements: {classified['improvements']}"
     messages = [
         SystemMessage(content=INSIGHTS_PROMPT),
@@ -79,7 +91,9 @@ def generate_insights(classified: dict) -> dict:
     ]
     insights_llm = get_structured_insights_llm()
     result = insights_llm.invoke(messages)
-    return result.model_dump()
+    result_dump = result.model_dump()
+    cache.set(cache_key, result_dump, timeout=3600)
+    return result_dump
 
 
 def summarise_feedback_points(feedbacks: list):

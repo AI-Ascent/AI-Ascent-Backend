@@ -5,6 +5,8 @@ from db.models.skill import SkillCatalog
 from agents.agents.skill import run_skill_agent
 from db.models.user import APIUser
 from agents.agents.safety import check_prompt_safety, redact_pii
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 
 
 class CreateSkillView(APIView):
@@ -45,6 +47,7 @@ class CreateSkillView(APIView):
 
 
 class GetSkillRecommendationsView(APIView):
+    @method_decorator(cache_page(60 * 60 * 24 * 2))  # Cache for 2 days
     def post(self, request):
         email = request.data.get("email")
         skill_query = request.data.get("skill_query")

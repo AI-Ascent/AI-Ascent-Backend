@@ -22,6 +22,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
 from agents.agents.safety import check_prompt_safety
+from django.core.cache import cache
 
 
 load_dotenv()
@@ -99,6 +100,10 @@ def find_mentors_for_improvements(user_email: str, top_k: int = 3) -> List[Dict]
     Returns:
         List of dictionaries containing mentor information and similarity scores
     """
+    cache_key = f"find_mentors_{user_email}_{top_k}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
 
     current_user = APIUser.objects.get(email=user_email)
 
@@ -175,4 +180,5 @@ def find_mentors_for_improvements(user_email: str, top_k: int = 3) -> List[Dict]
                 }
             )
 
+    cache.set(cache_key, selected_per_improvement, timeout=172800)
     return selected_per_improvement

@@ -5,6 +5,8 @@ from db.models.onboard import OnboardCatalog
 from agents.agents.onboard import run_onboard_agent
 from db.models.user import APIUser
 from agents.agents.safety import check_prompt_safety, redact_pii
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 
 
 class CreateOnboardView(APIView):
@@ -54,6 +56,7 @@ class CreateOnboardView(APIView):
 
 
 class GetOnboardView(APIView):
+    @method_decorator(cache_page(60 * 60 * 24 * 2))  # Cache for 2 days
     def post(self, request):
         email = request.data.get("email")
         additional_prompt = request.data.get("additional_prompt", "")

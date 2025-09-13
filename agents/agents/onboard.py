@@ -8,6 +8,7 @@ from db.models.onboard import OnboardCatalog
 from db.models.embeddings import embeddings
 from pgvector.django import CosineDistance
 import json
+from django.core.cache import cache
 
 load_dotenv()
 
@@ -216,6 +217,10 @@ def run_onboard_agent(
     Runs the onboard agent with the given query and returns the JSON response. If no query is given, returns the best matching job
     if the similarity is greater than 0.95.
     """
+    cache_key = f"onboard_agent_{job_title}_{specialization}_{query}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
 
     if not query:
         if not job_title:
@@ -223,6 +228,7 @@ def run_onboard_agent(
 
         job_details = get_job_details_title_spec(job_title, specialization)
         if job_details:
+            cache.set(cache_key, job_details, timeout=172800)
             return job_details
         else:
             pass  # No good similar job
@@ -236,7 +242,7 @@ def run_onboard_agent(
 
     agent = create_onboard_agent()
     result = agent.invoke({"input": full_query})
-    print(result)
-    print("\n\n\n\n\n", result.get("output", "{}"))
 
-    return json.loads(result.get("output", "{}"))
+    final_result = json.loads(result.get("output", "{}"))
+    cache.set(cache_key, final_result, timeout=172800)
+    return final_result
