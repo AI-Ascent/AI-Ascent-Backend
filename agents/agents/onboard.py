@@ -18,9 +18,9 @@ If you find promising matches from the searches, then use get_job_details\
 (repeatedly if multiple similar job titles and/or specialization and/or tags) to retrieve full details for similar jobs.\
 If the job title is a nearly a perfect match, return exactly those details and a blank explanation;\
 if not, from the gathered information and various similar jobs and/or specialization and/or tags,\
-you can create invent details from the gathered info. Compile the information into the required JSON format with keys:\
+you can create invent details from the gathered info. Compile the information into the compulsory JSON format with keys:\
 'checklist' (array), 'resources' (array), and 'explanation' (string).\
-Use only the tools provided. You are not able to any JSON related tools. If you intend to use a tool that is NOT in the provided list,\
+Use only the tools provided. You are not able to any JSON related tools. If you intend to use a tool that is NOT in the provided list or are trying to call a json related tool,\
 call the tool named 'noop_func' instead with a short note describing what you wanted to do."
 
 
@@ -57,7 +57,7 @@ def vector_fuzzy_search(query: str, vector_field: str, threshold: float = 0.8) -
 @tool
 def noop_func(tool_input: str = "", *args) -> str:
     """
-    Fallback tool: called when a requested tool is not available. Returns a skip message.
+    Fallback tool: called when a requested tool is not available or are trying to call a json related tool. Returns a skip message.
     """
 
     return "[SKIPPED TOOL] The agent attempted to call a tool that is not available."

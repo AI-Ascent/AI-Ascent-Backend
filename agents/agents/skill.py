@@ -34,7 +34,7 @@ Compile all gathered information into a JSON format. The JSON object should have
 Do not invent any new resources or use placeholder/examples for resources (so no example.com or similar urls). If you need resources for something not in the skill catalog, use tavily_search tool and prioritize free ones.
 Try to be as quick and concise and possible using the least amount of finding tool calls and iterations.
 Focus on actionable, practical learning resources and current industry-relevant skills.
-Use only the tools provided. If you intend to use a tool that is NOT in the provided list,
+Use only the tools provided. If you intend to use a tool that is NOT in the provided list or are trying to call a json related tool,
 call the tool named 'noop_func' instead with a short note describing what you wanted to do."""
 
 
@@ -150,7 +150,7 @@ def get_skill_details(skill_title: str) -> str:
 @tool
 def noop_func(tool_input: str = "", *args) -> str:
     """
-    Fallback tool: called when a requested tool is not available. Returns a skip message.
+    Fallback tool: called when a requested tool is not available or are trying to call a json related tool. Returns a skip message.
     """
 
     return "[SKIPPED TOOL] The agent attempted to call a tool that is not available."
