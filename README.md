@@ -3,13 +3,97 @@
 The API Backend for AI Ascent SAP Hackathon.
 
 ## Table of Contents
-- [Features](#features)
 - [Agents](#agents)
+- [AI Models](#ai-models)
+- [Features](#features)
 - [API Documentation](#api-documentation)
 - [Models](#models)
 - [Setup](#setup)
 - [Supabase Settings](#supabase-settings)
 - [Admin Username and Password](#admin-username-and-password)
+
+## Agents
+
+The backend uses AI agents powered by LangChain for various processing tasks.
+
+### Feedback Agent
+- Collect and store user feedback
+- AI-powered classification of feedback into strengths and improvements using sentiment analysis
+- Generation of actionable insights and growth tips from classified feedback
+- Bias filtering to ensure fair and inclusive feedback analysis
+- Vector-based storage of user strengths for mentor matching
+
+### Onboarding Management
+- Create and manage onboarding catalogs for different job roles
+- Associate specializations, tags, checklists, and resources with each role
+- AI-powered semantic search using vector embeddings to find relevant onboarding information
+- Personalized onboarding plans based on employee job titles and specializations
+- Support for structured onboarding processes with customizable checklists and learning resources
+
+### Skill Development
+- Create and manage skill catalogs with learning resources
+- AI-powered semantic search for skill recommendations
+- Personalized skill suggestions based on user context and feedback insights
+- Integration with external search (Tavily) for additional resources when needed
+- Support for various resource types (tutorials, courses, documentation, etc.)
+
+### Mentorship Matching
+- Find mentors within the organization based on improvement areas
+- Vector similarity matching between user improvements and other users' strengths
+- AI-powered selection of best mentor matches
+- Support for multiple improvement areas with individual mentor recommendations
+
+### Safety and Security
+- Bias and hate speech filtering in feedback using ML models
+- Prompt injection detection for user inputs
+- PII (Personal Identifiable Information) redaction from prompts
+- Safe processing of all AI agent interactions
+
+## AI Models
+
+This project uses various AI models for different purposes. All models are configured via environment variables for easy deployment and testing.
+
+### Large Language Models (LLMs)
+The application uses Groq-hosted models for various AI agent functionalities:
+
+- **Coordinator Agent**: `groq:openai/gpt-oss-20b`
+  - Purpose: General-purpose coordination and multi-step reasoning
+  - Used in: Coordinator endpoint for complex user queries
+
+- **Feedback Agent**: `groq:llama-3.1-8b-instant`
+  - Purpose: Feedback analysis, classification, and insight generation
+  - Used in: Feedback processing endpoints
+
+- **Opportunity Agent**: `groq:llama-3.1-8b-instant`
+  - Purpose: Mentor matching and organizational talent analysis
+  - Used in: Mentor finding functionality
+
+- **Onboard Agent**: `groq:openai/gpt-oss-120b`
+  - Purpose: Personalized onboarding plan generation
+  - Used in: Onboarding information retrieval
+
+- **Skill Agent**: `groq:openai/gpt-oss-20b`
+  - Purpose: Skill recommendation and development planning
+  - Used in: Skill development endpoints
+
+### HuggingFace Models
+The application uses several HuggingFace models for specialized tasks:
+
+- **Embeddings Model**: `all-MiniLM-L6-v2`
+  - Purpose: Text embeddings for semantic search and similarity matching
+  - Used in: Vector similarity search across job titles, skills, and user data
+
+- **Sentiment Analysis**: `cardiffnlp/twitter-roberta-base-sentiment-latest`
+  - Purpose: Sentiment classification of user feedback
+  - Used in: Feedback processing and classification
+
+- **Hate Speech Detection**: `facebook/roberta-hate-speech-dynabench-r4-target`
+  - Purpose: Filtering biased and discriminatory content
+  - Used in: Safety checks on user feedback
+
+- **Prompt Injection Detection**: `protectai/deberta-v3-base-prompt-injection-v2`
+  - Purpose: Preventing malicious prompt injection attacks
+  - Used in: Input validation and security checks
 
 ## Features
 
@@ -50,82 +134,6 @@ The API Backend for AI Ascent SAP Hackathon.
 - Prompt injection detection for user inputs
 - PII (Personal Identifiable Information) redaction from prompts
 - Safe processing of all AI agent interactions
-
-## Agents
-
-The backend uses AI agents powered by LangChain for various processing tasks.
-
-### Feedback Agent
-- **Purpose**: Processes and analyzes user feedback to provide classification and actionable insights.
-- **Features**:
-  - **Classification**: Categorizes feedback into strengths and improvements using sentiment analysis, filtering out biased content.
-  - **Insights Generation**: Creates actionable insights from classified feedback and provides growth tips.
-  - **Bias Filtering**: Uses ML models to remove discriminatory or biased feedback.
-- **How it works**:
-  - Uses structured output models with Pydantic for consistent responses.
-  - Employs a pipeline approach: first classifies feedback, then generates insights.
-  - Filters feedback for bias using HuggingFace models.
-  - Utilizes language models specified by the `FEEDBACK_MODEL` environment variable with temperature 0.0 for consistency.
-
-### Onboard Agent
-- **Purpose**: Provides personalized onboarding information using semantic search and AI reasoning.
-- **Features**:
-  - **Semantic Search**: Uses vector embeddings to find similar job titles, specializations, and tags.
-  - **Intelligent Matching**: Combines multiple search strategies to find the most relevant onboarding content.
-  - **Dynamic Content Generation**: Creates customized onboarding plans when exact matches aren't found.
-- **How it works**:
-  - Utilizes HuggingFace embeddings for vector similarity search on job titles, specializations, and tags.
-  - Employs a tool-calling agent with specialized search tools.
-  - Searches for similar jobs using cosine distance on vector fields.
-  - Compiles information from multiple similar roles to generate comprehensive onboarding materials.
-  - Returns structured JSON with checklists, resources, and explanations.
-  - Uses the language model specified by the `ONBOARD_MODEL` environment variable.
-
-### Skill Agent
-- **Purpose**: Provides personalized skill development recommendations using semantic search and external resources.
-- **Features**:
-  - **Semantic Search**: Uses vector embeddings to find relevant skills and resources.
-  - **Personalization**: Incorporates user feedback insights for tailored recommendations.
-  - **External Integration**: Uses Tavily search for additional resources when catalog is insufficient.
-  - **Structured Output**: Returns organized skill recommendations with resources and learning outcomes.
-- **How it works**:
-  - Utilizes vector fuzzy search on skill titles, types, and tags.
-  - Employs a tool-calling agent with search and retrieval tools.
-  - Considers user context (job title, specialization) and feedback insights.
-  - Returns JSON with skills array containing titles, descriptions, learning outcomes, and resources.
-  - Uses the language model specified by the `SKILL_MODEL` environment variable.
-
-### Opportunity Agent
-- **Purpose**: Matches users with mentors based on improvement areas and organizational talent retention.
-- **Features**:
-  - **Mentor Matching**: Finds users whose strengths match others' improvement areas using vector similarity.
-  - **AI Selection**: Uses LLM to select the best mentor from candidates.
-  - **Multiple Improvements**: Handles multiple improvement areas with individual mentor recommendations.
-- **How it works**:
-  - Computes vector embeddings for user improvement areas.
-  - Finds similar user strengths using cosine distance.
-  - Uses structured LLM output to select best mentor matches.
-  - Returns detailed mentor information with reasoning.
-  - Uses the language model specified by the `OPPORTUNITY_MODEL` environment variable.
-
-### Safety Agent
-- **Purpose**: Ensures safe and appropriate processing of all user inputs and content.
-- **Features**:
-  - **Bias Detection**: Filters hate speech and discriminatory content in feedback.
-  - **Prompt Safety**: Detects and prevents prompt injection attacks.
-  - **PII Redaction**: Removes personal information from prompts before processing.
-- **How it works**:
-  - Uses HuggingFace models for hate speech classification and prompt injection detection.
-  - Applies regex-based PII redaction for emails and phone numbers.
-  - Integrates safety checks throughout the application.
-
-### Coordinator Agent
-- **Purpose**: A general-purpose agent for coordination tasks (currently not integrated into the API endpoints).
-- **How it works**:
-  - Initialized with a language model specified by the `CORDINATOR_MODEL` environment variable.
-  - Uses a structured chat zero-shot react description agent type.
-  - Designed for handling complex tasks with no predefined tools (tools list is empty).
-  - Can be extended for future features requiring multi-step reasoning or coordination.
 
 ## API Documentation
 
@@ -345,6 +353,30 @@ The backend uses AI agents powered by LangChain for various processing tasks.
   - Error (404): `{"error": "User not found."}`
   - Error (500): `{"error": "Failed to find mentors: [error details]"}`
 
+#### 10. Coordinator Ask
+- **URL**: `/api/coordinator-ask/`
+- **Method**: `POST`
+- **Description**: Processes a user query using the coordinator agent to provide coordinated responses with action items and resources.
+- **Request Body**:
+  ```json
+  {
+    "email": "user@example.com",
+    "query": "What skills should I develop for my role?"
+  }
+  ```
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "message": "Based on your role as a Backend Developer, you should focus on improving your API design skills and learning about microservices architecture.",
+      "action_items": ["Complete the API Design course", "Review microservices documentation"],
+      "resources": ["API Design Best Practices Guide", "Microservices Architecture Tutorial"]
+    }
+    ```
+  - Error (400): `{"error": "Email and query are required."}`
+  - Error (404): `{"error": "User not found."}`
+  - Error (500): `{"error": "Failed to process query: [error details]"}`
+
 ## Models
 
 ### APIUser
@@ -375,20 +407,6 @@ The backend uses AI agents powered by LangChain for various processing tasks.
 - **tags_vector**: Vector embedding for tags
 - **type_vector**: Vector embedding for type
 
-### OpenRole - Not integrated yet tho
-- **title**: Job title for open position
-- **specialization**: Specialization for the role
-- **skills**: Array of required skills
-- **description**: Job description
-- **level**: Experience level (e.g., Junior, Senior)
-- **salary_min**: Minimum salary
-- **salary_max**: Maximum salary
-- **title_vector**: Vector embedding for title
-- **specialization_vector**: Vector embedding for specialization
-- **skills_vector**: Vector embedding for skills
-- **description_vector**: Vector embedding for description
-- **aggregate_vector**: Combined vector for overall matching
-
 ## Setup
 
 ### Prerequisites
@@ -400,11 +418,11 @@ The backend uses AI agents powered by LangChain for various processing tasks.
 ### Environment Variables
 Create a `.env` file with the following variables:
 ```
-FEEDBACK_MODEL=your-feedback-model
-ONBOARD_MODEL=your-onboard-model
-SKILL_MODEL=your-skill-model
-OPPORTUNITY_MODEL=your-opportunity-model
-CORDINATOR_MODEL=your-coordinator-model
+CORDINATOR_MODEL="groq:openai/gpt-oss-20b"
+FEEDBACK_MODEL="groq:llama-3.1-8b-instant"
+OPPORTUNITY_MODEL="groq:llama-3.1-8b-instant"
+ONBOARD_MODEL="groq:openai/gpt-oss-120b"
+SKILL_MODEL="groq:openai/gpt-oss-20b"
 TAVILY_API_KEY=your-tavily-api-key
 HF_TOKEN=your-huggingface-token
 SUPABASE_URL=your-supabase-url
