@@ -14,7 +14,7 @@ load_dotenv()
 
 
 # Coordinator agent model
-CORDINATOR_MODEL: str = os.getenv("CORDINATOR_MODEL", "groq:openai/gpt-oss-20b")
+CORDINATOR_MODEL: str = os.getenv("CORDINATOR_MODEL", "groq:openai/gpt-oss-120b")
 
 # Feedback agent model
 FEEDBACK_MODEL: str = os.getenv("FEEDBACK_MODEL", "groq:llama-3.1-8b-instant")
@@ -23,7 +23,7 @@ FEEDBACK_MODEL: str = os.getenv("FEEDBACK_MODEL", "groq:llama-3.1-8b-instant")
 OPPORTUNITY_MODEL: str = os.getenv("OPPORTUNITY_MODEL", "groq:llama-3.1-8b-instant")
 
 # Onboard agent model
-ONBOARD_MODEL: str = os.getenv("ONBOARD_MODEL", "groq:openai/gpt-oss-120b")
+ONBOARD_MODEL: str = os.getenv("ONBOARD_MODEL", "groq:qwen/qwen3-32b")
 
 # Skill agent model
-SKILL_MODEL: str = os.getenv("SKILL_MODEL", "groq:openai/gpt-oss-20b")
+SKILL_MODEL: str = os.getenv("SKILL_MODEL", "groq:qwen/qwen3-32b")
