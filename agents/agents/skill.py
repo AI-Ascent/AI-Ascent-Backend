@@ -1,6 +1,4 @@
-import os
 from langchain.chat_models import init_chat_model
-from dotenv import load_dotenv
 from langchain.tools import tool
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.prompts import ChatPromptTemplate
@@ -12,10 +10,12 @@ from pgvector.django import CosineDistance
 from agents.agents.feedback import classify_feedback
 import json
 from django.core.cache import cache
+import os
+from agents.agents.model_config import SKILL_MODEL
+from dotenv import load_dotenv
 
 load_dotenv()
 
-SKILL_MODEL = os.getenv("SKILL_MODEL")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 SKILL_LLM = None
 SKILL_AGENT = None

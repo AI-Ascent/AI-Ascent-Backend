@@ -52,28 +52,30 @@ The backend uses AI agents powered by LangChain for various processing tasks.
 
 ## AI Models
 
-This project uses various AI models for different purposes. All models are configured via environment variables for easy deployment and testing.
+This project uses various AI models for different purposes. Model names now have built-in defaults in `agents/agents/model_config.py`, and can optionally be overridden via environment variables. This removes the need to set x_MODEL values in Docker.
 
 ### Large Language Models (LLMs)
 The application uses Groq-hosted models for various AI agent functionalities:
 
-- **Coordinator Agent**: `groq:openai/gpt-oss-20b`
+- **Coordinator Agent** (default): `groq:openai/gpt-oss-20b`
   - Purpose: General-purpose coordination and multi-step reasoning
   - Used in: Coordinator endpoint for complex user queries
 
-- **Feedback Agent**: `groq:llama-3.1-8b-instant`
+- **Feedback Agent** (default): `groq:llama-3.1-8b-instant`
   - Purpose: Feedback analysis, classification, and insight generation
   - Used in: Feedback processing endpoints
 
-- **Opportunity Agent**: `groq:llama-3.1-8b-instant`
+- **Opportunity Agent** (default): `groq:llama-3.1-8b-instant`
   - Purpose: Mentor matching and organizational talent analysis
   - Used in: Mentor finding functionality
 
-- **Onboard Agent**: `groq:openai/gpt-oss-120b`
+- **Onboard Agent** (default): `groq:openai/gpt-oss-120b`
   - Purpose: Personalized onboarding plan generation
   - Used in: Onboarding information retrieval
 
-- **Skill Agent**: `groq:openai/gpt-oss-20b`
+- **Skill Agent** (default): `groq:openai/gpt-oss-20b`
+
+To override any default, set the corresponding env var (optional): `CORDINATOR_MODEL`, `FEEDBACK_MODEL`, `OPPORTUNITY_MODEL`, `ONBOARD_MODEL`, or `SKILL_MODEL`.
   - Purpose: Skill recommendation and development planning
   - Used in: Skill development endpoints
 

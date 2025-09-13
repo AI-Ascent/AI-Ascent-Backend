@@ -1,11 +1,9 @@
-import os
 import json
 import re
 from langchain.chat_models import init_chat_model
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.tools import tool
 from langchain.prompts import ChatPromptTemplate
-from dotenv import load_dotenv
 from agents.agents.onboard import run_onboard_agent
 from agents.agents.skill import run_skill_agent
 from agents.agents.opportunity import find_mentors_for_improvements
@@ -13,10 +11,8 @@ from agents.agents.feedback import classify_feedback, summarise_feedback_points
 from agents.agents.safety import filter_feedback_for_bias
 from db.models.user import APIUser
 from django.core.cache import cache
+from agents.agents.model_config import CORDINATOR_MODEL
 
-load_dotenv()
-
-CORDINATOR_MODEL = os.getenv("CORDINATOR_MODEL")
 CORDINATOR_LLM = None
 
 CORDINATOR_PROMPT = """You are the central coordinator agent for AI Ascent, an AI-powered career development platform that helps employees grow professionally through personalized guidance, feedback analysis, and opportunity matching.

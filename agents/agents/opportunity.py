@@ -16,18 +16,13 @@ from django.db.models import Q
 from pgvector.django import CosineDistance
 from db.models.user import APIUser
 from db.models.embeddings import embeddings
-import os
-from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
 from agents.agents.safety import check_prompt_safety
 from django.core.cache import cache
+from agents.agents.model_config import OPPORTUNITY_MODEL
 
-
-load_dotenv()
-
-OPPORTUNITY_MODEL = os.getenv("OPPORTUNITY_MODEL")
 _OPPORTUNITY_LLM = None
 
 

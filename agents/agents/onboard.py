@@ -1,6 +1,4 @@
-import os
 from langchain.chat_models import init_chat_model
-from dotenv import load_dotenv
 from langchain.tools import tool
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.prompts import ChatPromptTemplate
@@ -9,10 +7,7 @@ from db.models.embeddings import embeddings
 from pgvector.django import CosineDistance
 import json
 from django.core.cache import cache
-
-load_dotenv()
-
-ONBOARD_MODEL = os.getenv("ONBOARD_MODEL")
+from agents.agents.model_config import ONBOARD_MODEL
 ONBOARD_LLM = None
 ONBOARD_AGENT = None
 

@@ -4,6 +4,7 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV TOKENIZERS_PARALLELISM=false
 
 # Set work directory
 WORKDIR /app
@@ -28,5 +29,5 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "AIAscentBackend.wsgi:application", "--timeout", "600"]
+# Run the application with 2 workers, 2 threads, and preload for CoW memory sharing
+CMD ["gunicorn", "AIAscentBackend.wsgi:application", "--bind=0.0.0.0:8000", "--workers=2", "--threads=2", "--worker-class=gthread", "--preload", "--timeout=600"]

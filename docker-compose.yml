@@ -11,4 +11,6 @@ services:
       - DEBUG=False
       - ALLOWED_HOSTS=0.0.0.0,localhost
       - SECRET_KEY=django-insecure-change-this-in-production
-    command: sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 AIAscentBackend.wsgi:application"
+      - TOKENIZERS_PARALLELISM=false
+    # Use 2 workers, 2 threads, and preload for CoW memory sharing
+    command: sh -c "python manage.py migrate && gunicorn AIAscentBackend.wsgi:application --bind=0.0.0.0:8000 --workers=2 --threads=2 --worker-class=gthread --preload --timeout=600"

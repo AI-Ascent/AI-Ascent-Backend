@@ -1,18 +1,13 @@
-import os
 import json
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableLambda
 from pydantic import BaseModel, Field
-from dotenv import load_dotenv
 from db.models.embeddings import sentiment_analysis
 from agents.agents.safety import filter_feedback_for_bias
 from django.core.cache import cache
+from agents.agents.model_config import FEEDBACK_MODEL
 
-load_dotenv()
-
-
-FEEDBACK_MODEL = os.getenv("FEEDBACK_MODEL")
 FEEDBACK_LLM = None
 INSIGHTS_LLM = None
 
