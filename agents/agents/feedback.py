@@ -52,7 +52,7 @@ def classify_feedback(feedbacks: list):
         else:
             classified["improvements"].append(text)
 
-    cache.set(cache_key, classified, timeout=3600)  # Cache for 1 hour
+    cache.set(cache_key, classified, timeout=172800)  # Cache for 1 hour
     return classified
 
 

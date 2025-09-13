@@ -9,6 +9,7 @@ The API Backend for AI Ascent SAP Hackathon.
 - [API Documentation](#api-documentation)
 - [Models](#models)
 - [Setup](#setup)
+- [Caching Configuration](#caching-configuration)
 - [Supabase Settings](#supabase-settings)
 - [Admin Username and Password](#admin-username-and-password)
 
@@ -134,6 +135,13 @@ The application uses several HuggingFace models for specialized tasks:
 - Prompt injection detection for user inputs
 - PII (Personal Identifiable Information) redaction from prompts
 - Safe processing of all AI agent interactions
+
+### Performance & Caching
+- Comprehensive caching system for improved response times
+- Database-backed cache storage for persistence across deployments
+- Smart cache invalidation to maintain data consistency
+- Optimized timeouts based on data volatility (1 hour to 2 days)
+- Reduced API costs through intelligent response caching
 
 ## API Documentation
 
@@ -438,6 +446,62 @@ SUPABASE_KEY=your-supabase-key
 
 ### Database Setup
 The application uses PostgreSQL with the pgvector extension for vector similarity search. Ensure pgvector is installed and enabled in your database.
+
+### Caching Configuration
+The application implements comprehensive caching to improve performance and reduce redundant API calls:
+
+#### Django Cache Setup
+- **Backend**: Database cache using PostgreSQL table `django_cache`
+- **Purpose**: Stores cached responses and agent results
+- **Configuration**: Automatically created during migrations
+
+#### Agent-Level Caching
+All AI agents implement caching with different timeout strategies:
+
+- **Coordinator Agent**: 2 days (172,800 seconds)
+  - Caches complete query responses with action items and resources
+  - Includes JSON parsing and error correction results
+
+- **Feedback Agent**: 2 days (172,800 seconds)
+  - Caches feedback classification (strengths vs improvements)
+  - Caches generated insights and growth tips
+
+- **Onboarding Agent**: 2 days
+  - Caches personalized onboarding plans and checklists
+  - Includes semantic search results
+
+- **Skill Agent**: 2 days
+  - Caches skill recommendations and learning resources
+  - Includes personalized suggestions based on user context
+
+- **Opportunity Agent**: 2 days
+  - Caches mentor matching results
+  - Stores similarity calculations and LLM selections
+
+#### API-Level Caching
+All read-heavy endpoints implement view-level caching:
+
+- **Coordinator Ask**: 2 days
+- **Get Onboarding Information**: 2 days
+- **Get Skill Recommendations**: 2 days
+- **Find Mentors**: 2 days
+- **Classify Feedback**: 2 days
+- **Summarize Feedback**: 2 days
+
+#### Cache Invalidation
+Smart cache invalidation ensures data consistency:
+
+- **Feedback Addition**: Invalidates all related caches when new feedback is added
+- **Automatic Cleanup**: Expired cache entries are automatically removed
+- **Key-based Invalidation**: Uses structured cache keys for targeted invalidation
+
+#### Performance Benefits
+- **Faster Response Times**: Duplicate queries served from cache in milliseconds
+- **Reduced API Costs**: Fewer calls to external AI services (Groq, HuggingFace)
+- **Improved User Experience**: Consistent response times for repeated queries
+- **Scalability**: Reduced server load during peak usage
+
+Cache timeouts are optimized based on data volatility - frequently changing data (like feedback) uses shorter timeouts, while stable data (like skill recommendations) uses longer timeouts.
 
 ## Supabase Settings
 (TO BE REMOVED IF MAKING THE REPO PUBLIC)
