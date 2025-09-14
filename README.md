@@ -9,9 +9,8 @@ The API Backend for AI Ascent SAP Hackathon.
 - [API Documentation](#api-documentation)
 - [Models](#models)
 - [Setup](#setup)
+- [Run with Docker](#run-with-docker)
 - [Caching Configuration](#caching-configuration)
-- [Supabase Settings](#supabase-settings)
-- [Admin Username and Password](#admin-username-and-password)
 
 ## Agents
 
@@ -52,32 +51,18 @@ The backend uses AI agents powered by LangChain for various processing tasks.
 
 ## AI Models
 
-This project uses various AI models for different purposes. Model names now have built-in defaults in `agents/agents/model_config.py`.
+This project uses various AI models for different purposes. Defaults live in `agents/agents/model_config.py` and can be overridden via env vars.
 
 ### Large Language Models (LLMs)
-The application uses Groq-hosted models for various AI agent functionalities:
+The app uses Groq-hosted models:
 
-- **Coordinator Agent** (default): `groq:openai/gpt-oss-20b`
-  - Purpose: General-purpose coordination and multi-step reasoning
-  - Used in: Coordinator endpoint for complex user queries
+- Coordinator Agent (default): `groq:openai/gpt-oss-120b`
+- Feedback Agent (default): `groq:llama-3.1-8b-instant`
+- Opportunity Agent (default): `groq:llama-3.1-8b-instant`
+- Onboard Agent (default): `groq:qwen/qwen3-32b`
+- Skill Agent (default): `groq:openai/gpt-oss-20b`
 
-- **Feedback Agent** (default): `groq:llama-3.1-8b-instant`
-  - Purpose: Feedback analysis, classification, and insight generation
-  - Used in: Feedback processing endpoints
-
-- **Opportunity Agent** (default): `groq:llama-3.1-8b-instant`
-  - Purpose: Mentor matching and organizational talent analysis
-  - Used in: Mentor finding functionality
-
-- **Onboard Agent** (default): `groq:openai/gpt-oss-120b`
-  - Purpose: Personalized onboarding plan generation
-  - Used in: Onboarding information retrieval
-
-- **Skill Agent** (default): `groq:openai/gpt-oss-20b`
-
-To override any default, set the corresponding env var (optional): `CORDINATOR_MODEL`, `FEEDBACK_MODEL`, `OPPORTUNITY_MODEL`, `ONBOARD_MODEL`, or `SKILL_MODEL`.
-  - Purpose: Skill recommendation and development planning
-  - Used in: Skill development endpoints
+Override with env vars: `CORDINATOR_MODEL`, `FEEDBACK_MODEL`, `OPPORTUNITY_MODEL`, `ONBOARD_MODEL`, `SKILL_MODEL`.
 
 ### HuggingFace Models
 The application uses several HuggingFace models for specialized tasks:
@@ -125,6 +110,11 @@ The application uses several HuggingFace models for specialized tasks:
 - Personalized skill suggestions based on user context and feedback insights
 - Integration with external search (Tavily) for additional resources when needed
 - Support for various resource types (tutorials, courses, documentation, etc.)
+
+Notes on agent behavior:
+- Skill agent returns a JSON string (not a Python dict/object). It prefers the internal catalog and will only search the web sparingly.
+- Coordinator agent also formats its final answer as a JSON string and can call a lightweight internal "json" tool as a guardrail.
+- Opportunity agent surfaces mentor emails when available—API responses include them when the tool finds a match.
 
 ### Mentorship Matching
 - Find mentors within the organization based on improvement areas
@@ -426,62 +416,98 @@ The application uses several HuggingFace models for specialized tasks:
 - Required Python packages (see requirements.txt)
 
 ### Environment Variables
-Create a `.env` file with the following variables:
+Create a `.env` file. At minimum, point Django at your Postgres instance and set a secret key. Model names are optional overrides.
+
 ```
-CORDINATOR_MODEL="groq:openai/gpt-oss-20b"
-FEEDBACK_MODEL="groq:llama-3.1-8b-instant"
-OPPORTUNITY_MODEL="groq:llama-3.1-8b-instant"
-ONBOARD_MODEL="groq:openai/gpt-oss-120b"
-SKILL_MODEL="groq:openai/gpt-oss-20b"
-TAVILY_API_KEY=your-tavily-api-key
-HF_TOKEN=your-huggingface-token
-SUPABASE_URL=your-supabase-url
-SUPABASE_KEY=your-supabase-key
+# Django
+DEBUG=False
+SECRET_KEY=change-me
+
+# Database
+DB_ENGINE=django.db.backends.postgresql
+DB_HOST=your-postgres-host
+DB_PORT=6543
+DB_NAME=postgres
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+
+# Optional model overrides
+CORDINATOR_MODEL=groq:openai/gpt-oss-120b
+FEEDBACK_MODEL=groq:llama-3.1-8b-instant
+OPPORTUNITY_MODEL=groq:llama-3.1-8b-instant
+ONBOARD_MODEL=groq:qwen/qwen3-32b
+SKILL_MODEL=groq:openai/gpt-oss-20b
+
+# Optional external services
+TAVILY_API_KEY=...
+HF_TOKEN=...
 ```
 
 ### Installation
 1. Clone the repository
 2. Install dependencies: `pip install -r requirements.txt`
 3. Run migrations: `python manage.py migrate`
+4. Create cache table (first time only): `python manage.py createcachetable`
 4. Create superuser: `python manage.py createsuperuser`
 5. Start the server: `python manage.py runserver`
 
 ### Database Setup
 The application uses PostgreSQL with the pgvector extension for vector similarity search. Ensure pgvector is installed and enabled in your database.
 
+If you're using Django's database cache (default here), create the cache table once:
+
+- Locally: `python manage.py createcachetable`
+- In Docker: see the Docker section below for a one-liner.
+
+## Run with Docker
+
+Docker is the fastest way to try this backend. The image downloads HF models at build time, so the first build can take a few minutes.
+
+1) Put your `.env` next to `docker-compose.yml` (see the Environment Variables section).
+
+2) Build and start:
+
+```powershell
+docker compose up --build
+```
+
+This will run database migrations and start Gunicorn on port 8000. Visit http://localhost:8000.
+
+3) First-time cache table (one-time):
+
+```powershell
+docker compose exec web python manage.py createcachetable
+```
+
+4) Create an admin user (optional):
+
+```powershell
+docker compose exec web python manage.py createsuperuser
+```
+
+Notes
+- The container uses Gunicorn with 3 workers, 2 threads each, preload on. Adjust in `docker-compose.yml` if needed.
+- This setup expects an external Postgres instance; the compose file does not start a database.
+
 ### Caching Configuration
 The application implements comprehensive caching to improve performance and reduce redundant API calls:
 
 #### Django Cache Setup
-- **Backend**: Database cache using PostgreSQL table `django_cache`
-- **Purpose**: Stores cached responses and agent results
-- **Configuration**: Automatically created during migrations
+- Backend: Database cache using PostgreSQL table `django_cache`
+- Purpose: Stores cached responses and agent results
+- Setup: Run `python manage.py createcachetable` once (or the Docker equivalent)
 
 #### Agent-Level Caching
-All AI agents implement caching with different timeout strategies:
+Most agent/tool results are cached for ~2 days (172,800 seconds) to keep things snappy:
 
-- **Coordinator Agent**: 2 days (172,800 seconds)
-  - Caches complete query responses with action items and resources
-  - Includes JSON parsing and error correction results
-
-- **Feedback Agent**: 2 days (172,800 seconds)
-  - Caches feedback classification (strengths vs improvements)
-  - Caches generated insights and growth tips
-
-- **Onboarding Agent**: 2 days
-  - Caches personalized onboarding plans and checklists
-  - Includes semantic search results
-
-- **Skill Agent**: 2 days
-  - Caches skill recommendations and learning resources
-  - Includes personalized suggestions based on user context
-
-- **Opportunity Agent**: 2 days
-  - Caches mentor matching results
-  - Stores similarity calculations and LLM selections
+- Coordinator: final responses
+- Feedback: classifications and generated insights
+- Onboarding: plans and semantic search results
+- Skill: recommendations and external search results
+- Opportunity: mentor matching and selection details
 
 #### API-Level Caching
-All read-heavy endpoints implement view-level caching:
+Read-heavy endpoints use view-level caching:
 
 - **Coordinator Ask**: 2 days
 - **Get Onboarding Information**: 2 days
@@ -491,11 +517,11 @@ All read-heavy endpoints implement view-level caching:
 - **Summarize Feedback**: 2 days
 
 #### Cache Invalidation
-Smart cache invalidation ensures data consistency:
+Hints:
 
-- **Feedback Addition**: Invalidates all related caches when new feedback is added
-- **Automatic Cleanup**: Expired cache entries are automatically removed
-- **Key-based Invalidation**: Uses structured cache keys for targeted invalidation
+- Adding feedback will invalidate related feedback caches.
+- Expired entries are removed automatically by Django.
+- Cache keys are structured to allow targeted invalidation if needed.
 
 #### Performance Benefits
 - **Faster Response Times**: Duplicate queries served from cache in milliseconds
@@ -505,13 +531,14 @@ Smart cache invalidation ensures data consistency:
 
 Cache timeouts are optimized based on data volatility - frequently changing data (like feedback) uses shorter timeouts, while stable data (like skill recommendations) uses longer timeouts.
 
-## Supabase Settings
-(TO BE REMOVED IF MAKING THE REPO PUBLIC)
+## Admin & Access
 
-- Org and Project Name: AI Ascent Backend
-- Password: AIAscent2025
+There are no default credentials. Create an admin locally or in Docker:
 
-## Admin Username and Password
+```powershell
+# Local
+python manage.py createsuperuser
 
-- Username (Email): admin@admin.com
-- Password: Admin123
+# Docker
+docker compose exec web python manage.py createsuperuser
+```
