@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from agents.agents.cordinator import invoke_coordinator
+from agents.agents.safety import check_prompt_safety
 from db.models.user import APIUser
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -21,6 +22,12 @@ class CoordinatorView(APIView):
             return Response(
                 {"error": "Query is required."},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not check_prompt_safety(query):
+            return Response(
+                {"message": "Prompt is not safe for further processing or LLM!"},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
             )
 
         try:

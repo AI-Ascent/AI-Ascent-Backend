@@ -45,7 +45,7 @@ The backend uses AI agents powered by LangChain for various processing tasks.
 
 ### Safety and Security
 - Bias and hate speech filtering in feedback using ML models
-- Prompt injection detection for user inputs
+- Prompt injection detection for user inputs (including coordinator queries)
 - PII (Personal Identifiable Information) redaction from prompts
 - Safe processing of all AI agent interactions
 
@@ -126,7 +126,7 @@ Notes on agent behavior:
 
 ### Safety and Security
 - Bias and hate speech filtering in feedback using ML models
-- Prompt injection detection for user inputs
+- Prompt injection detection for user inputs (including coordinator queries)
 - PII (Personal Identifiable Information) redaction from prompts
 - Safe processing of all AI agent interactions
 
@@ -368,7 +368,7 @@ Authorization: Bearer <your_access_token>
 #### 10. Coordinator Ask
 - **URL**: `/api/coordinator-ask/`
 - **Method**: `POST`
-- **Description**: Processes a query from the authenticated user using the coordinator agent to provide coordinated responses with action items and resources.
+- **Description**: Processes a query from the authenticated user using the coordinator agent to provide coordinated responses with action items and resources. Includes prompt safety validation.
 - **Authentication**: Bearer token required
 - **Request Body**:
   ```json
@@ -386,6 +386,7 @@ Authorization: Bearer <your_access_token>
     }
     ```
   - Error (400): `{"error": "Query is required."}`
+  - Error (406): `{"message": "Prompt is not safe for further processing or LLM!"}`
   - Error (500): `{"error": "Failed to process query: [error details]"}`
 
 ## Models
