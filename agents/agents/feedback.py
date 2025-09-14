@@ -87,7 +87,7 @@ def generate_insights(classified: dict) -> dict:
     insights_llm = get_structured_insights_llm()
     result = insights_llm.invoke(messages)
     result_dump = result.model_dump()
-    cache.set(cache_key, result_dump, timeout=3600)
+    cache.set(cache_key, result_dump, timeout=172800)
     return result_dump
 
 

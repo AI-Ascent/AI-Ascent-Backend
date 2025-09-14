@@ -23,19 +23,18 @@ SKILL_AGENT = None
 
 SKILL_PROMPT = """You are a skill development assistant. Your goal is to help users find relevant learning resources and skills based on their query.
 
-Primarily use the skill catalog search tools (find_similar_skill_titles, find_similar_skill_types, find_skills_with_relevant_tags) to explore relevant skills and resources based on the user's query. At the end, with relevant skill titles found, use get_skill_details (multiple times if needed but atleast once) to retrieve the specific URL of that resource (Using placeholders like example is prohibited).
+Use the skill catalog search tools (find_similar_skill_titles, find_similar_skill_types, find_skills_with_relevant_tags) to explore relevant skills and resources based on the user's query.
 
-Only use the tavily_search tool sparingly if the skill catalog has no relevant information or you need very specific current data that isn't available internally. Avoid over-relying on external searches to keep recommendations focused on the catalog.
+Use the tavily_search tool a maximum of twice. If the skill catalog has no relevant information or you need specific current data that isn't available internally.
 
 When providing recommendations, consider any user feedback insights provided in the query to suggest skills that address their improvement areas and build upon their strengths.
 
-Compile all gathered information into a JSON format. The JSON object should have a 'skills' array, where each item has 'title', 'description', 'learning_outcomes', and a 'resources' array. Each resource should have 'title', 'url', and 'type'. Also include an 'explanation' string.
+Compile all gathered information into a json string (not actual json object but json string) format. The json string should have a 'skills' array, where each item has 'title', 'description', 'learning_outcomes', and a 'resources' array. Each resource should have 'title', 'url', and 'type'. Also include an 'explanation' string.
 
 Do not invent any new resources or use placeholder/examples for resources (so do not give or use example.com or similar urls). If you need resources for something not in the skill catalog, use tavily_search tool and prioritize free ones.
 Try to be as quick and concise and possible using the least amount of finding tool calls and iterations.
 Focus on actionable, practical learning resources and current industry-relevant skills.
-Use only the tools provided. If you intend to use a tool that is NOT in the provided list or are trying to call a json related tool,
-call the tool named 'noop_func' instead with a short note describing what you wanted to do."""
+Use only the tools provided. Output json string directly in your final answer."""
 
 
 def create_skill_llm():
@@ -82,7 +81,7 @@ def find_similar_skill_titles(skill_title: str) -> str:
     else:
         result = "\n".join(
             [
-                f"{skill.title} - Type: {skill.type} - Tags: {', '.join(skill.tags[:3])} (Similarity: {1 - skill.distance:.2f})"
+                f"{skill.title} - Type: {skill.type} - Tags: {', '.join(skill.tags[:3])} - URL: {skill.url} (Similarity: {1 - skill.distance:.2f})"
                 for skill in similar_skills
             ]
         )
@@ -107,7 +106,7 @@ def find_similar_skill_types(skill_type: str) -> str:
     else:
         result = "\n".join(
             [
-                f"{skill.title} - Type: {skill.type} (Similarity: {1 - skill.distance:.2f})"
+                f"{skill.title} - Type: {skill.type} - URL: {skill.url} (Similarity: {1 - skill.distance:.2f})"
                 for skill in similar_types
             ]
         )
@@ -133,56 +132,12 @@ def find_skills_with_relevant_tags(tags: str) -> str:
     else:
         result = "\n".join(
             [
-                f"{skill.title} - Tags: {', '.join(skill.tags)} - Type: {skill.type} (Similarity: {1 - skill.distance:.2f})"
+                f"{skill.title} - Tags: {', '.join(skill.tags)} - Type: {skill.type} - URL: {skill.url} (Similarity: {1 - skill.distance:.2f})"
                 for skill in relevant_skills
             ]
         )
     cache.set(cache_key, result, timeout=172800)
     return result
-
-
-@tool
-def get_skill_details(skill_title: str) -> str:
-    """
-    Get full details of the 3 most similar skill by title using fuzzy vector search.
-    Input: A string representing the skill title to search for.
-    Output: A formatted string with details of the top matching skill.
-    """
-    cache_key = f"get_skill_details_{skill_title}"
-    cached_result = cache.get(cache_key)
-    if cached_result:
-        return cached_result
-
-    similar_skills = vector_fuzzy_search(skill_title, "title_vector", threshold=0.8)
-    if similar_skills:
-        details = []
-        for i in range(3):
-            skill = similar_skills[i]
-            details.append(
-                f"""
-            Title: {skill.title}
-            Type: {skill.type}
-            Tags: {', '.join(skill.tags) if skill.tags else 'N/A'}
-            URL: {skill.url}
-            Similarity: {1 - skill.distance:.2f}
-            """
-            )
-
-        result = "\n------\n".join(details)
-    else:
-        result = f"No similar skill found for '{skill_title}'."
-
-    cache.set(cache_key, result, timeout=172800)
-    return result
-
-
-@tool
-def noop_func(tool_input: str = "", *args) -> str:
-    """
-    Fallback tool: called when a requested tool is not available or are trying to call a json related tool. Returns a skip message.
-    """
-
-    return "[SKIPPED TOOL] The agent attempted to call a tool that is not available."
 
 
 @tool
@@ -202,7 +157,7 @@ def tavily_search(query: str) -> str:
     else:
         try:
             search_tool = TavilySearchResults(
-                api_key=TAVILY_API_KEY, max_results=2, search_depth="advanced"
+                api_key=TAVILY_API_KEY, max_results=2, search_depth="basic"
             )
             results = search_tool.invoke({"query": query})
 
@@ -219,8 +174,14 @@ def tavily_search(query: str) -> str:
         except Exception as e:
             result = f"Error searching online: {str(e)}"
 
-    cache.set(cache_key, result, timeout=3600)
+    cache.set(cache_key, result, timeout=172800)
     return result
+
+
+@tool(name_or_callable="json")
+def json_tool(tool_input: str = "") -> str:
+    """Guardrail: Call this tool for any json related functions need to be performed"""
+    return tool_input
 
 
 def create_skill_agent():
@@ -234,9 +195,8 @@ def create_skill_agent():
             find_similar_skill_titles,
             find_similar_skill_types,
             find_skills_with_relevant_tags,
-            get_skill_details,
             tavily_search,
-            noop_func,
+            json_tool,     # guardrail
         ]
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -278,13 +238,7 @@ def run_skill_agent(query: str, email: str = None):
             feedback_context = f"User feedback insights - Strengths: {', '.join(classified.get('strengths', []))}, Areas for Improvement: {', '.join(classified.get('improvements', []))}. "
             query = f"{feedback_context}{query}"
 
-    try:
-        result = agent.invoke({"input": query})
-    except:
-        try:
-            result = agent.invoke({"input": query})
-        except:
-            raise Exception("Skill model failed twice!")
+    result = agent.invoke({"input": query})
 
     output = result.get("output", "{}")
 

@@ -271,6 +271,6 @@ def run_onboard_agent(
     data: str = result.get("output", "{}")
     data = data[data.find("{") : data.rfind("}") + 1]
 
-    final_result = json.loads(result.get("output", "{}"))
+    final_result = json.loads(data)
     cache.set(cache_key, final_result, timeout=172800)
     return final_result

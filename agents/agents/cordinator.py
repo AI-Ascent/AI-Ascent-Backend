@@ -26,7 +26,7 @@ You orchestrate multiple specialized sub-agents to deliver holistic career devel
 IMPORTANT: You have NO information about the employee until you call the appropriate tools. You MUST call relevant tools to gather information before answering questions about the employee's career, skills, feedback, or opportunities.
 
 RESPONSE FORMAT:
-You MUST respond in valid JSON format using this structure:
+You MUST respond in valid json string format (not actual json object but json string) using this structure:
 {{
     "message": "The main response content with the primary information for the user",
     "action_items": ["Action item 1", "Action item 2", ...],
@@ -57,10 +57,11 @@ Available tools and when to use them:
    - User asks where they can improve or what they can improve on
 
 3. opportunity_agent_tool: Call this when:
-   - User wants to find mentors who can help with their improvement areas
+   - User wants to find mentors who can help with their improvement areas (to find mentors) (when user asks for mentors email)
    - User asks where or in what areas they can improve
    - This tool accesses the user's feedback data automatically, so you don't need to call feedback tools first
    - THIS TOOL PROVIDES IMPROVEMENT AREAS DIRECTLY - USE IT FOR QUESTIONS ABOUT WHERE TO IMPROVE
+   - THIS TOOL PROVIDES MENTORS EMAIL - MAKE SURE THAT EMAIL IS PROVIDED IN THE FINAL ANSWER / OUTPUT
 
 4. feedback_agent_tool: Call this when:
    - User asks about their strengths and weaknesses
@@ -102,6 +103,12 @@ def get_coordinator_agent_executor(user_email: str):
     """
     Initializes and returns a AgentExecutor for the coordinator.
     """
+
+    @tool(name_or_callable="json")
+    def json_tool(tool_input: str = "") -> str:
+        """Guardrail: Call this tool for any json related functions need to be performed"""
+        return tool_input
+
     # Create tools dynamically with email context
     @tool
     def onboard_agent_tool(query: str) -> str:
@@ -239,6 +246,7 @@ def get_coordinator_agent_executor(user_email: str):
 
     llm = get_cordinator_LLM()
     tools = [
+        json_tool,
         onboard_agent_tool,
         skill_agent_tool,
         opportunity_agent_tool,
