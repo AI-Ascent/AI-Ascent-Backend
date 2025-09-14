@@ -69,13 +69,20 @@ def find_similar_job_titles(job_title: str) -> str:
     """
     Find similar job titles using vector fuzzy search.
     """
+    cache_key = f"find_similar_job_titles_{job_title}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
     similar_jobs = vector_fuzzy_search(job_title, "title_vector")
-    return "\n".join(
+    result = "\n".join(
         [
             f"{job.title} - Specialization: {job.specialization} (Similarity: {1 - job.distance:.2f})"
             for job in similar_jobs
         ]
     )
+    cache.set(cache_key, result, timeout=172800)
+    return result
 
 
 @tool
@@ -83,13 +90,20 @@ def find_similar_specializations(specialization: str) -> str:
     """
     Find similar specializations using vector fuzzy search.
     """
+    cache_key = f"find_similar_specializations_{specialization}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
     similar_specs = vector_fuzzy_search(specialization, "specialization_vector")
-    return "\n".join(
+    result = "\n".join(
         [
             f"{spec.title} - Specialization: {spec.specialization} (Similarity: {1 - spec.distance:.2f})"
             for spec in similar_specs
         ]
     )
+    cache.set(cache_key, result, timeout=172800)
+    return result
 
 
 @tool
@@ -97,14 +111,21 @@ def find_jobs_with_relevant_tags(tags: str) -> str:
     """
     Find jobs with relevant tags using vector fuzzy search. The tags will be split on commas and used.
     """
+    cache_key = f"find_jobs_with_relevant_tags_{tags}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
     tags_str = " ".join([tag.strip() for tag in tags.split(",")])
     relevant_jobs = vector_fuzzy_search(tags_str, "tags_vector")
-    return "\n".join(
+    result = "\n".join(
         [
             f"{job.title} - Tags: {', '.join(job.tags)} (Similarity: {1 - job.distance:.2f})"
             for job in relevant_jobs
         ]
     )
+    cache.set(cache_key, result, timeout=172800)
+    return result
 
 
 @tool
@@ -114,6 +135,11 @@ def get_job_details(job_title: str) -> str:
     Input: A string representing the job title to search for (e.g., 'Software Engineer').
     Output: A formatted string with details of the top matching job.
     """
+    cache_key = f"get_job_details_{job_title}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
     similar_jobs = vector_fuzzy_search(job_title, "title_vector", threshold=0.8)
     if similar_jobs:
         job = similar_jobs[0]  # Top result
@@ -126,9 +152,12 @@ def get_job_details(job_title: str) -> str:
         Resources: {'; '.join(job.resources) if job.resources else 'N/A'}
         Similarity: {1 - job.distance:.2f}
         """
-        return details.strip()
+        result = details.strip()
     else:
-        return f"No similar job found for '{job_title}'."
+        result = f"No similar job found for '{job_title}'."
+
+    cache.set(cache_key, result, timeout=172800)
+    return result
 
 
 def get_job_details_title_spec(job_title: str, specialization: str = "N/A") -> str:
