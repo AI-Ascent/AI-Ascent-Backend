@@ -44,7 +44,7 @@ def create_skill_llm():
     """
     global SKILL_LLM
     if not SKILL_LLM:
-        SKILL_LLM = init_chat_model(SKILL_MODEL)
+        SKILL_LLM = init_chat_model(SKILL_MODEL, model_kwargs={"reasoning_effort": "low"})
     return SKILL_LLM
 
 

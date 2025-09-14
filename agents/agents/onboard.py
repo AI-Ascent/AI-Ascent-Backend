@@ -19,10 +19,9 @@ If you find promising matches from the searches, then use get_job_details\
 (repeatedly if multiple similar job titles and/or specialization and/or tags) to retrieve full details for similar jobs.\
 If the job title is a nearly a perfect match, return exactly those details and a blank explanation;\
 if not, from the gathered information and various similar jobs and/or specialization and/or tags,\
-you can create invent details from the gathered info. Compile the information into the compulsory JSON format with keys:\
+you can create invent details from the gathered info. Compile the information into the compulsory json string (not actual json object but json string) format with keys:\
 'checklist' (array), 'resources' (array), and 'explanation' (string).\
-Use only the tools provided. You are not able to any JSON related tools. If you intend to use a tool that is NOT in the provided list or are trying to call a json related tool,\
-call the tool named 'noop_func' instead with a short note describing what you wanted to do."
+Use only the tools provided."
 
 
 def create_onboard_llm():
@@ -34,7 +33,7 @@ def create_onboard_llm():
 
     global ONBOARD_LLM
     if not ONBOARD_LLM:
-        ONBOARD_LLM = init_chat_model(ONBOARD_MODEL)
+        ONBOARD_LLM = init_chat_model(ONBOARD_MODEL, model_kwargs={"reasoning_effort": "low"})
 
     return ONBOARD_LLM
 
@@ -55,13 +54,10 @@ def vector_fuzzy_search(query: str, vector_field: str, threshold: float = 0.8) -
     return similar_items
 
 
-@tool
-def noop_func(tool_input: str = "", *args) -> str:
-    """
-    Fallback tool: called when a requested tool is not available or are trying to call a json related tool. Returns a skip message.
-    """
-
-    return "[SKIPPED TOOL] The agent attempted to call a tool that is not available."
+@tool(name_or_callable="json")
+def json_tool(tool_input: str = "") -> str:
+    """Guardrail: Call this tool for any json related functions need to be performed"""
+    return tool_input
 
 
 @tool
@@ -210,7 +206,7 @@ def create_onboard_agent():
             find_similar_specializations,
             find_jobs_with_relevant_tags,
             get_job_details,
-            noop_func,
+            json_tool
         ]
         prompt = ChatPromptTemplate.from_messages(
             [

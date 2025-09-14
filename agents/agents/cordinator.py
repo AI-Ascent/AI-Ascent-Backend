@@ -8,7 +8,6 @@ from agents.agents.onboard import run_onboard_agent
 from agents.agents.skill import run_skill_agent
 from agents.agents.opportunity import find_mentors_for_improvements
 from agents.agents.feedback import classify_feedback, summarise_feedback_points
-from agents.agents.safety import filter_feedback_for_bias
 from db.models.user import APIUser
 from django.core.cache import cache
 from agents.agents.model_config import CORDINATOR_MODEL
@@ -94,7 +93,7 @@ def get_cordinator_LLM():
 
     global CORDINATOR_LLM
     if not CORDINATOR_LLM:
-        CORDINATOR_LLM = init_chat_model(model=CORDINATOR_MODEL, temperature=0.0)
+        CORDINATOR_LLM = init_chat_model(model=CORDINATOR_MODEL, temperature=0.0, model_kwargs={"reasoning_effort": "low"})
 
     return CORDINATOR_LLM
 
