@@ -11,7 +11,7 @@ Use the above skill profile (from the user and feedback cuz why not) and vector 
 Model to store open roles in the company with the skills for it and other stuff needed.
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from django.db.models import Q
 from pgvector.django import CosineDistance
 from db.models.user import APIUser
@@ -34,15 +34,14 @@ def get_opportunity_llm():
 
 
 class MentorSelection(BaseModel):
-    best_candidate_index: Optional[int] = Field(
+    best_candidate_index: Union[str, int, None] = Field(
         default=None,
         description="Zero-based index of the best-suited mentor in the provided candidates, or null if none is suitable",
-        ge=0,
     )
     reason: Optional[str] = Field(
         default=None, description="Short explanation. If none suitable, explain why and what is missing."
     )
-    no_good_mentor: bool = Field(
+    no_good_mentor: Union[str, bool, None] = Field(
         default=False, description="True if no candidate is a strong enough match for the user's improvement areas"
     )
 
@@ -76,11 +75,24 @@ def _pick_best_mentor_with_llm(
     sys = SystemMessage(
         content=(
             "You are a careful mentor selector. From the shortlist, pick ONE mentor only if their strengths directly and specifically address the user's improvements. "
-            "Return the zero-based index as best_candidate_index. If none is a decent fit, set no_good_mentor=true and leave best_candidate_index null. "
+            "Return the zero-based index as best_candidate_index. If none is a decent fit, set no_good_mentor=True and leave best_candidate_index null. "
             "Be strict and aim for quality over quantity."
         )
     )
     result = llm.invoke([sys, HumanMessage(content=content)])
+    
+    if result.best_candidate_index:
+        if result.best_candidate_index.isdigit():
+            result.best_candidate_index = int(result.best_candidate_index)
+        else:
+            result.best_candidate_index = None
+    
+    if result.no_good_mentor:
+        if result.no_good_mentor == 'false':
+            result.no_good_mentor = False
+        else:
+            result.no_good_mentor = True
+        
     return result
 
 
