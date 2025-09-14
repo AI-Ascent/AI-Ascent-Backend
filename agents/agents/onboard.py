@@ -8,6 +8,7 @@ from pgvector.django import CosineDistance
 import json
 from django.core.cache import cache
 from agents.agents.model_config import ONBOARD_MODEL
+
 ONBOARD_LLM = None
 ONBOARD_AGENT = None
 
@@ -237,6 +238,9 @@ def run_onboard_agent(
 
     agent = create_onboard_agent()
     result = agent.invoke({"input": full_query})
+
+    data: str = result.get("output", "{}")
+    data = data[data.find("{") : data.rfind("}") + 1]
 
     final_result = json.loads(result.get("output", "{}"))
     cache.set(cache_key, final_result, timeout=172800)
