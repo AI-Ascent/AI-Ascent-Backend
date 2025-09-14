@@ -4,6 +4,7 @@ from langchain.chat_models import init_chat_model
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.tools import tool
 from langchain.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
 from agents.agents.onboard import run_onboard_agent
 from agents.agents.skill import run_skill_agent
 from agents.agents.opportunity import find_mentors_for_improvements
@@ -14,7 +15,8 @@ from agents.agents.model_config import CORDINATOR_MODEL
 
 CORDINATOR_LLM = None
 
-CORDINATOR_PROMPT = """You are the central coordinator agent for AI Ascent, an AI-powered career development platform that helps employees grow professionally through personalized guidance, feedback analysis, and opportunity matching.
+CORDINATOR_PROMPT = """
+You are the central coordinator agent for AI Ascent, an AI-powered career development platform that helps employees grow professionally through personalized guidance, feedback analysis, and opportunity matching.
 
 SYSTEM CONTEXT:
 AI Ascent analyzes employee profiles, feedback, and organizational data to provide tailored career development pathways. As the coordinator, you are the primary interface between employees and the specialized AI tools that power the platform. Your goal is to understand employee needs and return them to the right resources for their professional growth.
@@ -44,32 +46,24 @@ DIRECT ANSWER POLICY:
 - If tool results contain the information the user is seeking, present it directly rather than asking for more input.
 
 Available tools and when to use them:
-1. onboard_agent_tool: Call this when:
+1. onboard_agent_tool: (SHOULD ONLY BE CALLED ONCE) Call this when:
    - User wants information about job roles, responsibilities, or onboarding processes
    - User needs checklists or resources for specific job roles
    - User wants explanations about career paths or job expectations
 
-2. skill_agent_tool: Call this when:
+2. skill_agent_tool: (SHOULD ONLY BE CALLED AT MOST TWICE) Call this when:
    - User wants to learn about skills they should develop
    - User asks for learning resources, training materials, or courses
    - User inquires about skill gaps or how to improve specific capabilities
    - User asks where they can improve or what they can improve on
 
-3. opportunity_agent_tool: Call this when:
+3. opportunity_agent_tool: (SHOULD ONLY BE CALLED ONCE) Call this when:
    - User wants to find mentors who can help with their improvement areas (to find mentors) (when user asks for mentors email)
-   - User asks where or in what areas they can improve
-   - This tool accesses the user's feedback data automatically, so you don't need to call feedback tools first
-   - THIS TOOL PROVIDES IMPROVEMENT AREAS DIRECTLY - USE IT FOR QUESTIONS ABOUT WHERE TO IMPROVE
+   - This tool accesses the user's feedback data automatically
    - THIS TOOL PROVIDES MENTORS EMAIL - MAKE SURE THAT EMAIL IS PROVIDED IN THE FINAL ANSWER / OUTPUT
 
-4. feedback_agent_tool: Call this when:
-   - User asks about their strengths and weaknesses
-   - User provides feedback text that needs classification
-   - User wants to understand how others perceive their performance
-   - Pass all feedback statements as a list of strings
-
-5. summarise_feedback_tool: Call this when:
-   - User wants actionable insights based on feedback
+4. summarise_feedback_tool: (SHOULD ONLY BE CALLED ONCE) Call this when:
+   - User wants actionable insights based on feedback that is already there in the database
    - User asks for growth tips or how to improve based on feedback
    - User needs structured analysis of their feedback
    - Pass all feedback statements as a list of strings
@@ -82,8 +76,10 @@ EXECUTION GUIDE:
 5. If a tool returns an error, try to fix the input or use a different tool
 6. Always provide clear, actionable responses based on tool outputs
 7. Only do what the user asks. Do not add anything extra like 'Next steps', etc.
+8. Use as less tool calls / iterations as possible
 
-Remember that you're working with a specific employee's data, so all tool responses will be personalized to them. Focus on providing guidance that helps the employee grow professionally and advance their career within their organization."""
+Remember that you're working with a specific employee's data, so all tool responses will be personalized to them. Focus on providing guidance that helps the employee grow professionally and advance their career within their organization.
+"""
 
 
 def get_cordinator_LLM():
@@ -93,7 +89,8 @@ def get_cordinator_LLM():
 
     global CORDINATOR_LLM
     if not CORDINATOR_LLM:
-        CORDINATOR_LLM = init_chat_model(model=CORDINATOR_MODEL, temperature=0.0, model_kwargs={"reasoning_effort": "low"})
+        # CORDINATOR_LLM = init_chat_model(model=CORDINATOR_MODEL, temperature=0.0, reasoning_effort= "low")
+        CORDINATOR_LLM = ChatGroq(model=CORDINATOR_MODEL.split(':')[-1], reasoning_effort='low')
 
     return CORDINATOR_LLM
 
@@ -105,7 +102,7 @@ def get_coordinator_agent_executor(user_email: str):
 
     @tool(name_or_callable="json")
     def json_tool(tool_input: str = "") -> str:
-        """Guardrail: Call this tool for any json related functions need to be performed"""
+        """Guardrail: Call this tool for any json related functions need to be performed. You should never have to create a json object however. Give the json string directly in final message."""
         return tool_input
 
     # Create tools dynamically with email context
@@ -158,7 +155,7 @@ def get_coordinator_agent_executor(user_email: str):
             return f"Error in skill agent: {str(e)}. Unable to process skill development request."
 
     @tool
-    def opportunity_agent_tool(top_k: int = 3) -> str:
+    def opportunity_agent_tool() -> str:
         """Tool for finding improvement areas and suitable mentors.
 
         This tool automatically accesses the employee's feedback data, identifies specific improvement areas,
@@ -168,13 +165,8 @@ def get_coordinator_agent_executor(user_email: str):
         Use this tool when the user asks where they can improve or what areas need development.
 
         Use this tool when the user wants to:
-        - Find specific areas where they can improve their performance
+        - Find specific areas where they can improve their performance based on their feedbacks
         - Identify mentors who can help them improve in specific areas
-        - Discover growth opportunities based on their feedback
-        - Connect with colleagues who have complementary strengths
-
-        Args:
-            top_k (int): Number of top mentor recommendations to return (default: 3).
 
         Returns:
             str: List of improvement areas and potential mentors with their expertise and matching reasons.
@@ -182,38 +174,10 @@ def get_coordinator_agent_executor(user_email: str):
         try:
             if not user_email:
                 return "User email required for mentor finding. Please provide user context."
-            mentors = find_mentors_for_improvements(user_email, top_k)
+            mentors = find_mentors_for_improvements(user_email)
             return str(mentors)
         except Exception as e:
             return f"Error in opportunity agent: {str(e)}. Unable to find mentors."
-
-    @tool
-    def feedback_agent_tool(feedbacks: list) -> str:
-        """Tool for analyzing and classifying feedback into strengths and improvement areas.
-
-        This tool processes feedback statements and categorizes them into what the employee
-        is doing well (strengths) and what they could improve on (improvements).
-
-        Use this tool when:
-        - The user provides feedback statements that need classification
-        - The user wants to understand their performance strengths and weaknesses
-        - The user asks about how others perceive their work
-
-        Args:
-            feedbacks (list): List of feedback statements as strings.
-
-        Returns:
-            str: Dictionary with 'strengths' and 'improvements' categorized from the feedback.
-        """
-        try:
-            if not isinstance(feedbacks, list) or not all(
-                isinstance(item, str) for item in feedbacks
-            ):
-                return "Error: 'feedbacks' must be a list of strings containing specific feedback statements."
-            classified = classify_feedback(feedbacks)
-            return str(classified)
-        except Exception as e:
-            return f"Error in feedback agent: {str(e)}. Unable to classify feedback."
 
     @tool
     def summarise_feedback_tool(feedbacks: list) -> str:
@@ -249,7 +213,6 @@ def get_coordinator_agent_executor(user_email: str):
         onboard_agent_tool,
         skill_agent_tool,
         opportunity_agent_tool,
-        feedback_agent_tool,
         summarise_feedback_tool,
     ]
     prompt = ChatPromptTemplate.from_messages(
@@ -260,7 +223,7 @@ def get_coordinator_agent_executor(user_email: str):
         ]
     )
     agent = create_tool_calling_agent(llm, tools, prompt)
-    executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+    executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=8)
 
     return executor
 
