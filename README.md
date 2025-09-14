@@ -178,51 +178,7 @@ Authorization: Bearer <your_access_token>
   - Error (401): `{"error": "Invalid password."}`
   - Error (404): `{"error": "User not found."}`
 
-#### 2. Get JWT Token Pair
-- **URL**: `/api/token/`
-- **Method**: `POST`
-- **Description**: Obtains JWT access and refresh tokens using email/password.
-- **Authentication**: None required
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "userpassword"
-  }
-  ```
-- **Response**:
-  - Success (200):
-    ```json
-    {
-      "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-      "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-      "user_id": 1,
-      "email": "user@example.com",
-      "job_title": "Software Engineer",
-      "specialization": "Backend"
-    }
-    ```
-
-#### 3. Refresh JWT Token
-- **URL**: `/api/token/refresh/`
-- **Method**: `POST`
-- **Description**: Refreshes an expired access token using a valid refresh token.
-- **Authentication**: None required
-- **Request Body**:
-  ```json
-  {
-    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-  }
-  ```
-- **Response**:
-  - Success (200):
-    ```json
-    {
-      "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-    }
-    ```
-
-#### 4. Add Feedback
+#### 2. Add Feedback
 - **URL**: `/api/add-feedback/`
 - **Method**: `POST`
 - **Description**: Adds a new feedback item to another user's feedback list. Users cannot add feedback for themselves.
@@ -239,7 +195,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "email and feedback are required"}` or `{"error": "You cannot add feedback for yourself"}`
   - Error (404): `{"error": "User not found"}`
 
-#### 5. Classify Feedback
+#### 3. Classify Feedback
 - **URL**: `/api/classify-feedback/`
 - **Method**: `POST`
 - **Description**: Classifies all feedback items for the authenticated user into strengths and improvements using AI.
@@ -257,7 +213,7 @@ Authorization: Bearer <your_access_token>
     ```
   - Error (404): `{"error": "No feedbacks found for this user"}`
 
-#### 6. Summarise Feedback
+#### 4. Summarise Feedback
 - **URL**: `/api/summarise-feedback/`
 - **Method**: `POST`
 - **Description**: Provides a comprehensive summary of the authenticated user's feedback including classification and actionable insights.
@@ -278,7 +234,7 @@ Authorization: Bearer <your_access_token>
     ```
   - Error (404): `{"error": "No feedbacks found for this user"}`
 
-#### 7. Create Onboarding Item
+#### 5. Create Onboarding Item
 - **URL**: `/api/onboard/create/`
 - **Method**: `POST`
 - **Description**: Creates a new onboarding catalog item for job roles with associated checklists and resources.
@@ -298,7 +254,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "title and specialization are required"}` or `{"error": "tags, checklist, and resources must be arrays"}`
   - Error (500): `{"error": "Failed to create onboarding item: [error details]"}`
 
-#### 8. Get Onboarding Information
+#### 6. Get Onboarding Information
 - **URL**: `/api/onboard/get/`
 - **Method**: `POST`
 - **Description**: Retrieves personalized onboarding information for the authenticated user based on their job title and specialization using AI-powered semantic search.
@@ -320,7 +276,7 @@ Authorization: Bearer <your_access_token>
     ```
   - Error (500): `{"error": "Failed to run onboard agent: [error details]"}`
 
-#### 9. Create Skill Item
+#### 7. Create Skill Item
 - **URL**: `/api/create-skill/`
 - **Method**: `POST`
 - **Description**: Creates a new skill catalog item with learning resources.
@@ -339,7 +295,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "title, type, and url are required"}` or `{"error": "tags must be an array"}`
   - Error (500): `{"error": "Failed to create skill item: [error details]"}`
 
-#### 10. Get Skill Recommendations
+#### 8. Get Skill Recommendations
 - **URL**: `/api/get-skill-recommendations/`
 - **Method**: `POST`
 - **Description**: Provides personalized skill development recommendations for the authenticated user based on their context and query using AI-powered semantic search.
@@ -374,7 +330,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "skill_query is required"}`
   - Error (500): `{"error": "Failed to get skill recommendations: [error details]"}`
 
-#### 11. Find Mentors
+#### 9. Find Mentors
 - **URL**: `/api/find-mentors/`
 - **Method**: `POST`
 - **Description**: Finds potential mentors within the organization whose strengths match the authenticated user's improvement areas.
@@ -409,7 +365,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "top_k must be a positive integer."}`
   - Error (500): `{"error": "Failed to find mentors: [error details]"}`
 
-#### 12. Coordinator Ask
+#### 10. Coordinator Ask
 - **URL**: `/api/coordinator-ask/`
 - **Method**: `POST`
 - **Description**: Processes a query from the authenticated user using the coordinator agent to provide coordinated responses with action items and resources.
