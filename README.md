@@ -56,10 +56,10 @@ This project uses various AI models for different purposes. Defaults live in `ag
 ### Large Language Models (LLMs)
 The app uses Groq-hosted models:
 
-- Coordinator Agent (default): `groq:openai/gpt-oss-120b`
-- Feedback Agent (default): `groq:llama-3.1-8b-instant`
-- Opportunity Agent (default): `groq:llama-3.1-8b-instant`
-- Onboard Agent (default): `groq:qwen/qwen3-32b`
+- Coordinator Agent (default): `groq:openai/gpt-oss-20b`
+- Feedback Agent (default): `groq:meta-llama/llama-4-scout-17b-16e-instruct`
+- Opportunity Agent (default): `groq:meta-llama/llama-4-scout-17b-16e-instruct`
+- Onboard Agent (default): `groq:openai/gpt-oss-20b`
 - Skill Agent (default): `groq:openai/gpt-oss-20b`
 
 Override with env vars: `CORDINATOR_MODEL`, `FEEDBACK_MODEL`, `OPPORTUNITY_MODEL`, `ONBOARD_MODEL`, `SKILL_MODEL`.
