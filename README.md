@@ -52,7 +52,7 @@ The backend uses AI agents powered by LangChain for various processing tasks.
 
 ## AI Models
 
-This project uses various AI models for different purposes. Model names now have built-in defaults in `agents/agents/model_config.py`, and can optionally be overridden via environment variables. This removes the need to set x_MODEL values in Docker.
+This project uses various AI models for different purposes. Model names now have built-in defaults in `agents/agents/model_config.py`.
 
 ### Large Language Models (LLMs)
 The application uses Groq-hosted models for various AI agent functionalities:

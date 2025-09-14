@@ -30,4 +30,4 @@ COPY . .
 EXPOSE 8000
 
 # Run the application with 2 workers, 2 threads, and preload for CoW memory sharing
-CMD ["gunicorn", "AIAscentBackend.wsgi:application", "--bind=0.0.0.0:8000", "--workers=2", "--threads=2", "--worker-class=gthread", "--preload", "--timeout=600"]
+CMD ["gunicorn", "AIAscentBackend.wsgi:application", "--bind=0.0.0.0:8000", "--workers=3", "--threads=2", "--worker-class=gthread", "--preload", "--timeout=600"]

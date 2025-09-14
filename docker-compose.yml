@@ -13,4 +13,4 @@ services:
       - SECRET_KEY=django-insecure-change-this-in-production
       - TOKENIZERS_PARALLELISM=false
     # Use 2 workers, 2 threads, and preload for CoW memory sharing
-    command: sh -c "python manage.py migrate && gunicorn AIAscentBackend.wsgi:application --bind=0.0.0.0:8000 --workers=2 --threads=2 --worker-class=gthread --preload --timeout=600"
+    command: sh -c "python manage.py migrate && gunicorn AIAscentBackend.wsgi:application --bind=0.0.0.0:8000 --workers=3 --threads=2 --worker-class=gthread --preload --timeout=600"
