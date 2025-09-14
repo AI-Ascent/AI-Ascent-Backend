@@ -18,8 +18,7 @@ First, use the search tools (find_similar_job_titles, find_similar_specializatio
 to explore relevant job information based on the query. Do not jump straight to get_job_details.\
 If you find promising matches from the searches, then use get_job_details\
 (repeatedly if multiple similar job titles and/or specialization and/or tags) to retrieve full details for similar jobs.\
-If the job title is a nearly a perfect match, return exactly those details and a blank explanation;\
-if not, from the gathered information and various similar jobs and/or specialization and/or tags,\
+From the gathered information and various similar jobs and/or specialization and/or tags,\
 you can create invent details from the gathered info. Compile the information into the compulsory json string (not actual json object but json string) format with keys:\
 'checklist' (array), 'resources' (array), and 'explanation' (string).\
 Use only the tools provided."
@@ -262,7 +261,7 @@ def run_onboard_agent(
     else:
         base_query = job_title
 
-    full_query = f"{base_query} {query}".strip()
+    full_query = f"{base_query}. Extra user query: {query}".strip()
 
     agent = create_onboard_agent()
     result = agent.invoke({"input": full_query})
