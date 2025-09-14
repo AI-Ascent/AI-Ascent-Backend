@@ -86,7 +86,9 @@ The application uses several HuggingFace models for specialized tasks:
 ## Features
 
 ### User Authentication
+- JWT-based authentication with access and refresh tokens
 - Secure user login with email and password
+- Token-based API access with Bearer authentication
 - User management with custom APIUser model
 - Password hashing and validation
 
@@ -139,10 +141,18 @@ Notes on agent behavior:
 
 ### Endpoints
 
-#### 1. User Authentication
+#### Authentication
+
+All API endpoints (except authentication endpoints) require a valid JWT token in the Authorization header:
+```
+Authorization: Bearer <your_access_token>
+```
+
+#### 1. User Login
 - **URL**: `/api/login/`
 - **Method**: `POST`
-- **Description**: Authenticates a user with email and password.
+- **Description**: Authenticates a user with email and password, returns JWT tokens.
+- **Authentication**: None required
 - **Request Body**:
   ```json
   {
@@ -151,37 +161,90 @@ Notes on agent behavior:
   }
   ```
 - **Response**:
-  - Success (200): `{"message": "Authentication successful."}`
+  - Success (200): 
+    ```json
+    {
+      "message": "Authentication successful.",
+      "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+      "user": {
+        "id": 1,
+        "email": "user@example.com",
+        "job_title": "Software Engineer",
+        "specialization": "Backend"
+      }
+    }
+    ```
   - Error (400): `{"error": "Email and password are required."}`
   - Error (401): `{"error": "Invalid password."}`
   - Error (404): `{"error": "User not found."}`
 
-#### 2. Add Feedback
-- **URL**: `/api/add-feedback/`
+#### 2. Get JWT Token Pair
+- **URL**: `/api/token/`
 - **Method**: `POST`
-- **Description**: Adds a new feedback item to a user's feedback list.
+- **Description**: Obtains JWT access and refresh tokens using email/password.
+- **Authentication**: None required
 - **Request Body**:
   ```json
   {
     "email": "user@example.com",
+    "password": "userpassword"
+  }
+  ```
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+      "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+      "user_id": 1,
+      "email": "user@example.com",
+      "job_title": "Software Engineer",
+      "specialization": "Backend"
+    }
+    ```
+
+#### 3. Refresh JWT Token
+- **URL**: `/api/token/refresh/`
+- **Method**: `POST`
+- **Description**: Refreshes an expired access token using a valid refresh token.
+- **Authentication**: None required
+- **Request Body**:
+  ```json
+  {
+    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+  }
+  ```
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+    }
+    ```
+
+#### 4. Add Feedback
+- **URL**: `/api/add-feedback/`
+- **Method**: `POST`
+- **Description**: Adds a new feedback item to another user's feedback list. Users cannot add feedback for themselves.
+- **Authentication**: Bearer token required
+- **Request Body**:
+  ```json
+  {
+    "email": "target_user@example.com",
     "feedback": "Your feedback text here"
   }
   ```
 - **Response**:
   - Success (200): `{"message": "Feedback added successfully"}`
-  - Error (400): `{"error": "email and feedback are required"}`
+  - Error (400): `{"error": "email and feedback are required"}` or `{"error": "You cannot add feedback for yourself"}`
   - Error (404): `{"error": "User not found"}`
 
-#### 3. Classify Feedback
+#### 5. Classify Feedback
 - **URL**: `/api/classify-feedback/`
 - **Method**: `POST`
-- **Description**: Classifies all feedback items for a user into strengths and improvements using AI.
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com"
-  }
-  ```
+- **Description**: Classifies all feedback items for the authenticated user into strengths and improvements using AI.
+- **Authentication**: Bearer token required
+- **Request Body**: None (uses authenticated user's data)
 - **Response**:
   - Success (200):
     ```json
@@ -192,19 +255,14 @@ Notes on agent behavior:
       }
     }
     ```
-  - Error (400): `{"error": "email is required"}`
-  - Error (404): `{"error": "User not found"}` or `{"error": "No feedbacks found for this user"}`
+  - Error (404): `{"error": "No feedbacks found for this user"}`
 
-#### 4. Summarise Feedback
+#### 6. Summarise Feedback
 - **URL**: `/api/summarise-feedback/`
 - **Method**: `POST`
-- **Description**: Provides a comprehensive summary of user feedback including classification and actionable insights.
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com"
-  }
-  ```
+- **Description**: Provides a comprehensive summary of the authenticated user's feedback including classification and actionable insights.
+- **Authentication**: Bearer token required
+- **Request Body**: None (uses authenticated user's data)
 - **Response**:
   - Success (200):
     ```json
@@ -218,13 +276,13 @@ Notes on agent behavior:
       }
     }
     ```
-  - Error (400): `{"error": "email is required"}`
-  - Error (404): `{"error": "User not found"}` or `{"error": "No feedbacks found for this user"}`
+  - Error (404): `{"error": "No feedbacks found for this user"}`
 
-#### 5. Create Onboarding Item
+#### 7. Create Onboarding Item
 - **URL**: `/api/onboard/create/`
 - **Method**: `POST`
 - **Description**: Creates a new onboarding catalog item for job roles with associated checklists and resources.
+- **Authentication**: Bearer token required
 - **Request Body**:
   ```json
   {
@@ -240,14 +298,14 @@ Notes on agent behavior:
   - Error (400): `{"error": "title and specialization are required"}` or `{"error": "tags, checklist, and resources must be arrays"}`
   - Error (500): `{"error": "Failed to create onboarding item: [error details]"}`
 
-#### 6. Get Onboarding Information
+#### 8. Get Onboarding Information
 - **URL**: `/api/onboard/get/`
 - **Method**: `POST`
-- **Description**: Retrieves personalized onboarding information for an employee based on their job title and specialization using AI-powered semantic search.
+- **Description**: Retrieves personalized onboarding information for the authenticated user based on their job title and specialization using AI-powered semantic search.
+- **Authentication**: Bearer token required
 - **Request Body**:
   ```json
   {
-    "email": "employee@example.com",
     "additional_prompt": "focus on the analytics part" // Optional
   }
   ```
@@ -260,14 +318,13 @@ Notes on agent behavior:
       "explanation": "Customized onboarding plan based on your role as Backend Developer"
     }
     ```
-  - Error (400): `{"error": "Email is required"}`
-  - Error (404): `{"error": "Employee not found"}`
   - Error (500): `{"error": "Failed to run onboard agent: [error details]"}`
 
-#### 7. Create Skill Item
+#### 9. Create Skill Item
 - **URL**: `/api/create-skill/`
 - **Method**: `POST`
 - **Description**: Creates a new skill catalog item with learning resources.
+- **Authentication**: Bearer token required
 - **Request Body**:
   ```json
   {
@@ -282,14 +339,14 @@ Notes on agent behavior:
   - Error (400): `{"error": "title, type, and url are required"}` or `{"error": "tags must be an array"}`
   - Error (500): `{"error": "Failed to create skill item: [error details]"}`
 
-#### 8. Get Skill Recommendations
+#### 10. Get Skill Recommendations
 - **URL**: `/api/get-skill-recommendations/`
 - **Method**: `POST`
-- **Description**: Provides personalized skill development recommendations based on user context and query using AI-powered semantic search.
+- **Description**: Provides personalized skill development recommendations for the authenticated user based on their context and query using AI-powered semantic search.
+- **Authentication**: Bearer token required
 - **Request Body**:
   ```json
   {
-    "email": "user@example.com",
     "skill_query": "improve my data analysis skills"
   }
   ```
@@ -317,14 +374,14 @@ Notes on agent behavior:
   - Error (400): `{"error": "skill_query is required"}`
   - Error (500): `{"error": "Failed to get skill recommendations: [error details]"}`
 
-#### 9. Find Mentors
+#### 11. Find Mentors
 - **URL**: `/api/find-mentors/`
 - **Method**: `POST`
-- **Description**: Finds potential mentors within the organization whose strengths match the user's improvement areas.
+- **Description**: Finds potential mentors within the organization whose strengths match the authenticated user's improvement areas.
+- **Authentication**: Bearer token required
 - **Request Body**:
   ```json
   {
-    "email": "user@example.com",
     "top_k": 3
   }
   ```
@@ -349,18 +406,17 @@ Notes on agent behavior:
       ]
     }
     ```
-  - Error (400): `{"error": "Email is required."}` or `{"error": "top_k must be a positive integer."}`
-  - Error (404): `{"error": "User not found."}`
+  - Error (400): `{"error": "top_k must be a positive integer."}`
   - Error (500): `{"error": "Failed to find mentors: [error details]"}`
 
-#### 10. Coordinator Ask
+#### 12. Coordinator Ask
 - **URL**: `/api/coordinator-ask/`
 - **Method**: `POST`
-- **Description**: Processes a user query using the coordinator agent to provide coordinated responses with action items and resources.
+- **Description**: Processes a query from the authenticated user using the coordinator agent to provide coordinated responses with action items and resources.
+- **Authentication**: Bearer token required
 - **Request Body**:
   ```json
   {
-    "email": "user@example.com",
     "query": "What skills should I develop for my role?"
   }
   ```
@@ -373,8 +429,7 @@ Notes on agent behavior:
       "resources": ["API Design Best Practices Guide", "Microservices Architecture Tutorial"]
     }
     ```
-  - Error (400): `{"error": "Email and query are required."}`
-  - Error (404): `{"error": "User not found."}`
+  - Error (400): `{"error": "Query is required."}`
   - Error (500): `{"error": "Failed to process query: [error details]"}`
 
 ## Models
