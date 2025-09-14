@@ -1,9 +1,37 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from db.models.user import APIUser
 
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'email'
+
+    def validate(self, attrs):
+        # The default result (access/refresh tokens)
+        data = super().validate(attrs)
+        
+        # Custom data you want to include
+        data.update({
+            'user_id': self.user.id,
+            'email': self.user.email,
+            'job_title': self.user.job_title,
+            'specialization': self.user.specialization,
+        })
+        return data
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+
 class AuthenticateUser(APIView):
+    permission_classes = [AllowAny]
+    
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
@@ -14,7 +42,20 @@ class AuthenticateUser(APIView):
         try:
             user = APIUser.objects.get(email=email)
             if user.check_password(password):
-                return Response({"message": "Authentication successful."}, status=status.HTTP_200_OK)
+                # Generate JWT tokens
+                refresh = RefreshToken.for_user(user)
+                access_token = refresh.access_token
+                
+                return Response({
+                    "message": "Authentication successful.",
+                    "access_token": str(access_token),
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "job_title": user.job_title,
+                        "specialization": user.specialization,
+                    }
+                }, status=status.HTTP_200_OK)
             else:
                 return Response({"error": "Invalid password."}, status=status.HTTP_401_UNAUTHORIZED)
         except APIUser.DoesNotExist:

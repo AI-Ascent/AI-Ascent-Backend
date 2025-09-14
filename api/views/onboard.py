@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from db.models.onboard import OnboardCatalog
 from agents.agents.onboard import run_onboard_agent
 from db.models.user import APIUser
@@ -10,6 +11,8 @@ from django.views.decorators.cache import cache_page
 
 
 class CreateOnboardView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request):
         title = request.data.get("title")
         specialization = request.data.get("specialization")
@@ -56,24 +59,13 @@ class CreateOnboardView(APIView):
 
 
 class GetOnboardView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     @method_decorator(cache_page(60 * 60 * 24 * 2))  # Cache for 2 days
     def post(self, request):
-        email = request.data.get("email")
+        # Get user from JWT token
+        employee = request.user
         additional_prompt = request.data.get("additional_prompt", "")
-
-        if not email:
-            return Response(
-                {"error": "Email is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            employee = APIUser.objects.get(email=email)
-        except APIUser.DoesNotExist:
-            return Response(
-                {"error": "Employee not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
 
         if not check_prompt_safety(additional_prompt):
             return Response(

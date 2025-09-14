@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from db.models.skill import SkillCatalog
 from agents.agents.skill import run_skill_agent
 from db.models.user import APIUser
@@ -10,6 +11,8 @@ from django.views.decorators.cache import cache_page
 
 
 class CreateSkillView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request):
         title = request.data.get("title")
         tags = request.data.get("tags", [])
@@ -47,9 +50,12 @@ class CreateSkillView(APIView):
 
 
 class GetSkillRecommendationsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     @method_decorator(cache_page(60 * 60 * 24 * 2))  # Cache for 2 days
     def post(self, request):
-        email = request.data.get("email")
+        # Get user from JWT token
+        employee = request.user
         skill_query = request.data.get("skill_query")
 
         if not skill_query:
@@ -64,7 +70,6 @@ class GetSkillRecommendationsView(APIView):
                 status=status.HTTP_406_NOT_ACCEPTABLE,
             )
 
-        employee = APIUser.objects.get(email=email)
         user_context = f"User context - Job Title: {employee.job_title}"
         if employee.specialization:
             user_context += f", Specialization: {employee.specialization}"
@@ -76,7 +81,7 @@ class GetSkillRecommendationsView(APIView):
         full_query = redact_pii(full_query)
 
         try:
-            result = run_skill_agent(full_query.strip(), email)
+            result = run_skill_agent(full_query.strip(), employee.email)
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
