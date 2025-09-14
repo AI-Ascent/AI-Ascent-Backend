@@ -2,6 +2,7 @@ from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
 from db.models.onboard import OnboardCatalog
 from db.models.embeddings import embeddings
 from pgvector.django import CosineDistance
@@ -33,7 +34,8 @@ def create_onboard_llm():
 
     global ONBOARD_LLM
     if not ONBOARD_LLM:
-        ONBOARD_LLM = init_chat_model(ONBOARD_MODEL, model_kwargs={"reasoning_effort": "low"})
+        # ONBOARD_LLM = init_chat_model(ONBOARD_MODEL, reasoning_effort= "low")
+        ONBOARD_LLM = ChatGroq(model=ONBOARD_MODEL.split(':')[-1], reasoning_effort='low')
 
     return ONBOARD_LLM
 
@@ -226,6 +228,7 @@ def create_onboard_agent():
             handle_parsing_errors=True,
             return_intermediate_steps=True,
             early_stopping_method="generate",
+            max_iterations=8
         )
 
     return ONBOARD_AGENT
