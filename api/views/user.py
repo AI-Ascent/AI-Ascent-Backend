@@ -9,6 +9,23 @@ from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 import json
+import threading
+
+
+def process_feedback_background(user_email: str):
+    """
+    Background function to process feedback summarization.
+    This runs in a separate thread to avoid blocking the API response.
+    """
+    try:
+        user = APIUser.objects.get(email=user_email)
+        summary = summarise_feedback_points(user.feedbacks)
+        user.strengths = summary["strengths_insights"]
+        user.improvements = summary["improvements_insights"]
+        user.save()
+        print(f"Successfully processed feedback for {user_email}")
+    except Exception as e:
+        print(f"Background task failed to process feedback for {user_email}: {str(e)}")
 
 
 class AddFeedbackView(APIView):
@@ -37,25 +54,17 @@ class AddFeedbackView(APIView):
         try:
             user = APIUser.objects.get(email=email)
 
-            # Invalidate old cache before adding new feedback
-            old_feedbacks_tuple = tuple(user.feedbacks)
-            classify_key = f"classify_feedback_{hash(old_feedbacks_tuple)}"
-            
-            # Since generate_insights depends on classify_feedback, we need to get the old classified result to build its key
-            old_classified_result = cache.get(classify_key)
-            if old_classified_result:
-                insights_key = f"generate_insights_{hash(json.dumps(old_classified_result, sort_keys=True))}"
-                cache.delete(insights_key)
-
-            cache.delete(classify_key)
-            
-            # Invalidate opportunity agent cache for all possible top_k values
-            for i in range(1, 6): # Clear for top_k=1 to 5
-                opportunity_key = f"find_mentors_{email}_{i}"
-                cache.delete(opportunity_key)
-
             user.feedbacks.append(feedback)
             user.save()
+            
+            # Start background processing of feedback summarization
+            thread = threading.Thread(
+                target=process_feedback_background, 
+                args=(email,),
+                daemon=True
+            )
+            thread.start()
+            
             return Response(
                 {"message": "Feedback added successfully"}, status=status.HTTP_200_OK
             )
@@ -68,8 +77,6 @@ class AddFeedbackView(APIView):
 class ClassifyFeedbackView(APIView):
     permission_classes = [IsAuthenticated]
     
-    @method_decorator(cache_page(60 * 60 * 24 * 2))  # Cache for 2 days
-    @method_decorator(vary_on_cookie)
     def post(self, request):
         # Get user from JWT token
         user = request.user
