@@ -39,7 +39,7 @@ class MentorSelection(BaseModel):
         description="Zero-based index of the best-suited mentor in the provided candidates, or null if none is suitable",
     )
     reason: Optional[str] = Field(
-        default=None, description="Short explanation. If none suitable, explain why and what is missing."
+        default=None, description="Short explanation. Address the final candidate as 'Mentor' and do not mention the candidate index here. If none suitable, explain why and what is missing."
     )
     no_good_mentor: Union[str, bool, None] = Field(
         default=False, description="True if no candidate is a strong enough match for the user's improvement areas"
@@ -76,7 +76,7 @@ def _pick_best_mentor_with_llm(
         content=(
             "You are a careful mentor selector. From the shortlist, pick ONE mentor only if their strengths directly and specifically address the user's improvements. "
             "Return the zero-based index as best_candidate_index. If none is a decent fit, set no_good_mentor=True and leave best_candidate_index null. "
-            "Be strict and aim for quality over quantity."
+            "Be strict and aim for quality over quantity. Address the final candidate as 'Mentor' and do not mention the candidate index in the reason field."
         )
     )
     result = llm.invoke([sys, HumanMessage(content=content)])
