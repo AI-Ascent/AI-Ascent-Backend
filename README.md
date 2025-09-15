@@ -98,6 +98,7 @@ The application uses several HuggingFace models for specialized tasks:
 - Generation of actionable insights and growth tips from classified feedback
 - Bias filtering to ensure fair and inclusive feedback analysis
 - Vector-based storage of user strengths for mentor matching
+- **Asynchronous processing**: Feedback summarization runs in background threads to improve API response times
 
 ### Onboarding Management
 - Create and manage onboarding catalogs for different job roles
@@ -126,16 +127,18 @@ Notes on agent behavior:
 
 ### Safety and Security
 - Bias and hate speech filtering in feedback using ML models
-- Prompt injection detection for user inputs (including coordinator queries)
+- **Prompt injection detection** for user inputs (including coordinator queries) using specialized ML models
 - PII (Personal Identifiable Information) redaction from prompts
 - Safe processing of all AI agent interactions
+- Input validation and security checks for all user-facing endpoints
 
 ### Performance & Caching
-- Comprehensive caching system for improved response times
+- Comprehensive caching system for improved response times on selected endpoints
 - Database-backed cache storage for persistence across deployments
 - Smart cache invalidation to maintain data consistency
 - Optimized timeouts based on data volatility (1 hour to 2 days)
 - Reduced API costs through intelligent response caching
+- **Background processing**: Feedback summarization uses asynchronous threads to improve API response times
 
 ## API Documentation
 
@@ -181,7 +184,7 @@ Authorization: Bearer <your_access_token>
 #### 2. Add Feedback
 - **URL**: `/api/add-feedback/`
 - **Method**: `POST`
-- **Description**: Adds a new feedback item to another user's feedback list. Users cannot add feedback for themselves.
+- **Description**: Adds a new feedback item to another user's feedback list. Users cannot add feedback for themselves. Feedback summarization is processed asynchronously in the background for improved response times.
 - **Authentication**: Bearer token required
 - **Request Body**:
   ```json
@@ -524,16 +527,15 @@ Read-heavy endpoints use view-level caching:
 - **Coordinator Ask**: 2 days
 - **Get Onboarding Information**: 2 days
 - **Get Skill Recommendations**: 2 days
-- **Find Mentors**: 2 days
 - **Classify Feedback**: 2 days
 - **Summarize Feedback**: 2 days
 
 #### Cache Invalidation
-Hints:
+Current implementation details:
 
-- Adding feedback will invalidate related feedback caches.
-- Expired entries are removed automatically by Django.
-- Cache keys are structured to allow targeted invalidation if needed.
+- Adding feedback triggers asynchronous background processing for summarization
+- Expired entries are removed automatically by Django
+- Cache keys are structured to allow targeted invalidation if needed
 
 #### Performance Benefits
 - **Faster Response Times**: Duplicate queries served from cache in milliseconds
