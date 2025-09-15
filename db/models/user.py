@@ -42,14 +42,6 @@ class APIUser(AbstractUser):
             vecs = embeddings.embed_documents(self.strengths)
             if vecs:
                 mat = np.array(vecs, dtype=np.float32)
-                # L2-normalize each row, mean-pool, then L2-normalize the centroid
-                norms = np.linalg.norm(mat, axis=1, keepdims=True)
-                # Avoid division by zero
-                norms[norms == 0] = 1.0
-                mat = mat / norms
                 centroid = mat.mean(axis=0)
-                c_norm = np.linalg.norm(centroid)
-                if c_norm > 0:
-                    centroid = centroid / c_norm
                 self.strengths_vector = centroid.tolist()
         super().save(*args, **kwargs)
