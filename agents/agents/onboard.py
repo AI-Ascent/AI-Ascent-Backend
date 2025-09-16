@@ -178,7 +178,7 @@ def get_job_details_title_spec(job_title: str, specialization: str = "N/A") -> s
     )
 
     # Combine results and sort by the closest match
-    combined_results = list(similar_jobs_by_title) + list(similar_jobs_by_spec)
+    combined_results = list(set(list(similar_jobs_by_title)) & set(list(similar_jobs_by_spec)))
     combined_results = sorted(combined_results, key=lambda job: job.distance)
 
     if combined_results and combined_results[0].distance < 0.1:
@@ -187,7 +187,7 @@ def get_job_details_title_spec(job_title: str, specialization: str = "N/A") -> s
         details = {
             "checklist": job.checklist,
             "resources": job.resources,
-            "explanation": f"Near Exact match found with similarity of {1 - job.distance}",
+            "explanation": f"Near Exact match found in Onboard Catalog with similarity of {(1 - job.distance)*100:.1f}%",
         }
 
         return details
