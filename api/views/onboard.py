@@ -79,7 +79,18 @@ class GetOnboardView(APIView):
         specialization = employee.specialization
 
         try:
-            result = run_onboard_agent(additional_prompt, job_title, specialization)
+            result = None
+            e = None
+            for _ in range(3):
+                try:
+                    result = run_onboard_agent(additional_prompt, job_title, specialization)
+                    break
+                except Exception as _e:
+                    print(f"Error {_e} at retry {_}")
+                    e = _e
+            else:
+                if e:
+                    raise Exception(e)
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(

@@ -32,7 +32,19 @@ class CoordinatorView(APIView):
 
         try:
             # Call the coordinator agent
-            response = invoke_coordinator(user_input=query, user_email=user.email)
+            response = None
+            e = None
+            for _ in range(3):
+                try:
+                    response = invoke_coordinator(user_input=query, user_email=user.email)
+                    break
+                except Exception as _e:
+                    print(f"Error {_e} at retry {_}")
+                    e = _e
+            else:
+                if e:
+                    raise Exception(e)
+            
             return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(

@@ -76,9 +76,25 @@ def _pick_best_mentor_with_llm(
             "You are a careful mentor selector. From the shortlist, pick ONE mentor only if their strengths directly and specifically address the user's improvements. "
             "Return the zero-based index as best_candidate_index. If none is a decent fit, set no_good_mentor=True and leave best_candidate_index null. "
             "Be strict and aim for quality over quantity. Address the final candidate as 'Mentor' and do not mention the candidate index in the reason field."
+            "Remember to provide the output as a json."
         )
     )
-    result = llm.invoke([sys, HumanMessage(content=content)])
+
+    result = None
+
+    for retry_idx in range(3):
+        try:
+            result = llm.invoke([sys, HumanMessage(content=content)])
+            break
+        except Exception as e:
+            print(f"Error occurred (retry idx: {retry_idx}) while trying to get mentors: {e}")
+    else:
+        return {
+            'best_candidate_index': None,
+            'no_good_mentor': True,
+            'reason': 'Some internal server error'
+        } 
+
     
     if result.best_candidate_index:
         if result.best_candidate_index.isdigit():
