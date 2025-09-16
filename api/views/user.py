@@ -54,7 +54,7 @@ class AddFeedbackView(APIView):
         try:
             user = APIUser.objects.get(email=email)
 
-            user.feedbacks.extend(feedback.split("."))
+            user.feedbacks.extend([fi for fi in feedback.split(".") if fi.strip()])
             user.save()
             
             # Start background processing of feedback summarization
