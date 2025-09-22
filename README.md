@@ -347,7 +347,24 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "index_start and index_end must be present"}` or `{"error": "index_start and index_end must be integers"}` or `{"error": "Invalid index range"}`
   - Error (500): `{"error": "Failed to list onboarding items: [error details]"}`
 
-#### 9. Create Skill Item
+#### 9. Delete Onboarding Item
+- **URL**: `/api/onboard/delete/`
+- **Method**: `POST`
+- **Description**: Deletes an existing onboarding catalog item. Requires superuser permissions.
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**:
+  ```json
+  {
+    "id": 1
+  }
+  ```
+- **Response**:
+  - Success (200): `{"message": "Onboarding item deleted successfully"}`
+  - Error (400): `{"error": "id is required"}`
+  - Error (404): `{"error": "Onboarding item not found"}`
+  - Error (500): `{"error": "Failed to delete onboarding item: [error details]"}`
+
+#### 10. Create Skill Item
 - **URL**: `/api/create-skill/`
 - **Method**: `POST`
 - **Description**: Creates a new skill catalog item with learning resources.
@@ -468,7 +485,24 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "index_start and index_end must be present"}` or `{"error": "index_start and index_end must be integers"}` or `{"error": "Invalid index range"}`
   - Error (500): `{"error": "Failed to list skill items: [error details]"}`
 
-#### 13. Find Mentors
+#### 13. Delete Skill Item
+- **URL**: `/api/delete-skill/`
+- **Method**: `POST`
+- **Description**: Deletes an existing skill catalog item. Requires superuser permissions.
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**:
+  ```json
+  {
+    "id": 1
+  }
+  ```
+- **Response**:
+  - Success (200): `{"message": "Skill item deleted successfully"}`
+  - Error (400): `{"error": "id is required"}`
+  - Error (404): `{"error": "Skill item not found"}`
+  - Error (500): `{"error": "Failed to delete skill item: [error details]"}`
+
+#### 14. Find Mentors
 - **URL**: `/api/find-mentors/`
 - **Method**: `POST`
 - **Description**: Finds potential mentors within the organization whose strengths match the authenticated user's improvement areas.
@@ -503,7 +537,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "top_k must be a positive integer."}`
   - Error (500): `{"error": "Failed to find mentors: [error details]"}`
 
-#### 14. Coordinator Ask
+#### 15. Coordinator Ask
 - **URL**: `/api/coordinator-ask/`
 - **Method**: `POST`
 - **Description**: Processes a query from the authenticated user using the coordinator agent to provide coordinated responses with action items and resources. Includes prompt safety validation.
