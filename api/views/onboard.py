@@ -221,3 +221,36 @@ class ListOnboardView(APIView):
             )
 
 
+class DeleteOnboardView(APIView):
+    permission_classes = [IsSuperUser]
+    
+    def post(self, request):
+        id = request.data.get("id")
+
+        if not id:
+            return Response(
+                {"error": "id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            onboard_item = OnboardCatalog.objects.get(id=id)
+        except OnboardCatalog.DoesNotExist:
+            return Response(
+                {"error": "Onboarding item not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            onboard_item.delete()
+            return Response(
+                {"message": "Onboarding item deleted successfully"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to delete onboarding item: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+

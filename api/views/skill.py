@@ -198,7 +198,6 @@ class ListSkillView(APIView):
                     "id": item.id,
                     "title": item.title,
                     "type": item.type,
-                    "url": item.url
                 }
                 for item in skill_items
             ]
@@ -206,5 +205,38 @@ class ListSkillView(APIView):
         except Exception as e:
             return Response(
                 {"error": f"Failed to list skill items: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class DeleteSkillView(APIView):
+    permission_classes = [IsSuperUser]
+    
+    def post(self, request):
+        id = request.data.get("id")
+
+        if not id:
+            return Response(
+                {"error": "id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            skill_item = SkillCatalog.objects.get(id=id)
+        except SkillCatalog.DoesNotExist:
+            return Response(
+                {"error": "Skill item not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            skill_item.delete()
+            return Response(
+                {"message": "Skill item deleted successfully"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to delete skill item: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
