@@ -16,8 +16,8 @@ The API Backend for AI Ascent SAP Hackathon.
 
 The backend uses AI agents powered by LangChain for various processing tasks.
 
-### Feedback Agent
-- Collect and store user feedback
+### Feedbac#### 15. Get Skill Recommendations #### 16. Update Skill Itemgent
+- #### 17. List Skill Itemsollect a#### 18. Delete S#### 19. Find Mentorsill Itemd stor#### 20. Coordinator Ask user feedback
 - AI-powered classification of feedback into strengths and improvements using sentiment analysis
 - Generation of actionable insights and growth tips from classified feedback
 - Bias filtering to ensure fair and inclusive feedback analysis
@@ -364,7 +364,68 @@ Authorization: Bearer <your_access_token>
   - Error (404): `{"error": "Onboarding item not found"}`
   - Error (500): `{"error": "Failed to delete onboarding item: [error details]"}`
 
-#### 10. Create Skill Item
+#### 10. Finalize Onboarding
+- **URL**: `/api/onboard/finalize/`
+- **Method**: `POST`
+- **Description**: Finalizes the authenticated user's onboarding process. This marks the onboarding as complete and updates KPI tracking.
+- **Authentication**: Bearer token required
+- **Request Body**: None (uses authenticated user)
+- **Response**:
+  - Success (200): `{"message": "Onboard finalized successfully"}`
+  - Error (500): `{"error": "Internal server error"}`
+
+#### 11. Complete Checklist Item
+- **URL**: `/api/onboard/mark-checklist-item/`
+- **Method**: `POST`
+- **Description**: Marks a specific checklist item as completed for the authenticated user. Updates KPI tracking for completed tasks.
+- **Authentication**: Bearer token required
+- **Request Body**:
+  ```json
+  {
+    "checklist_item": "Complete coding assessment"
+  }
+  ```
+- **Response**:
+  - Success (200): `{"message": "Checklist item marked as completed"}`
+  - Error (400): `{"error": "checklist_item is required"}` or `{"error": "Checklist item not in original onboard checklist"}`
+  - Error (500): `{"error": "Internal server error"}`
+
+#### 12. Check Onboarding Finalization
+- **URL**: `/api/onboard/check/`
+- **Method**: `POST`
+- **Description**: Checks if the authenticated user's onboarding has been finalized.
+- **Authentication**: Bearer token required
+- **Request Body**: None (uses authenticated user)
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "finalized": true
+    }
+    ```
+  - Error (500): `{"error": "Internal server error"}`
+
+#### 13. Get Finalized Onboarding
+- **URL**: `/api/onboard/finalized/`
+- **Method**: `POST`
+- **Description**: Retrieves the finalized onboarding data and completed checklist items for the authenticated user.
+- **Authentication**: Bearer token required
+- **Request Body**: None (uses authenticated user)
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "onboard_data": {
+        "checklist": ["Complete coding assessment", "Setup development environment"],
+        "resources": ["https://docs.djangoproject.com/", "Internal wiki"],
+        "explanation": "Customized onboarding plan based on your role"
+      },
+      "completed_items": ["Complete coding assessment"]
+    }
+    ```
+  - Error (500): `{"error": "Internal server error"}`
+
+#### 14. Create Skill Item
 - **URL**: `/api/create-skill/`
 - **Method**: `POST`
 - **Description**: Creates a new skill catalog item with learning resources.
@@ -571,6 +632,10 @@ Authorization: Bearer <your_access_token>
 - **strengths**: Array of strength strings (derived from feedback)
 - **improvements**: Array of improvement strings (derived from feedback)
 - **strengths_vector**: Vector embedding for strengths (used for mentor matching)
+- **onboard_supp_hr_query**: Supplementary HR query for personalized onboarding
+- **onboard_finalized**: Boolean indicating if user has finalized their onboarding
+- **onboard_json**: JSON object containing customized onboarding data (checklist, resources, explanation)
+- **onboard_completed_checklist_items**: Array of completed checklist items
 
 ### OnboardCatalog
 - **title**: Job title
@@ -590,6 +655,12 @@ Authorization: Bearer <your_access_token>
 - **title_vector**: Vector embedding for title
 - **tags_vector**: Vector embedding for tags
 - **type_vector**: Vector embedding for type
+
+### KPI
+- **year**: Year for KPI tracking
+- **month**: Month for KPI tracking
+- **completed_onboard_tasks**: Count of onboard tasks completed by employees
+- **assigned_onboard_tasks**: Total number of onboard tasks assigned to employees
 
 ## Setup
 
