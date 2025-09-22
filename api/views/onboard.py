@@ -1,3 +1,4 @@
+import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,13 +8,11 @@ from db.models.onboard import OnboardCatalog
 from agents.agents.onboard import run_onboard_agent
 from db.models.user import APIUser
 from agents.agents.safety import check_prompt_safety, redact_pii
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 
 
 class CreateOnboardView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
         title = request.data.get("title")
         specialization = request.data.get("specialization")
@@ -61,8 +60,7 @@ class CreateOnboardView(APIView):
 
 class GetOnboardView(APIView):
     permission_classes = [IsAuthenticated]
-    
-    @method_decorator(cache_page(60 * 60 * 24 * 2))  # Cache for 2 days
+
     def post(self, request):
         # Get user from JWT token
         employee = request.user
@@ -73,8 +71,10 @@ class GetOnboardView(APIView):
                 {"message": "Prompt is not safe for further processing or LLM!"},
                 status=status.HTTP_406_NOT_ACCEPTABLE,
             )
-        
+
         additional_prompt = redact_pii(additional_prompt)
+
+        hr_supp_additional_prompt = f"{additional_prompt} | Supplementary (kinda important) HR dept query: {employee.onboard_supp_hr_query}"
 
         job_title = employee.job_title
         specialization = employee.specialization
@@ -84,7 +84,11 @@ class GetOnboardView(APIView):
             e = None
             for _ in range(3):
                 try:
-                    result = run_onboard_agent(additional_prompt, job_title, specialization)
+                    result = run_onboard_agent(
+                        hr_supp_additional_prompt, job_title, specialization
+                    )
+                    employee.onboard_json = result
+                    employee.save()
                     break
                 except Exception as _e:
                     print(f"Error {_e} at retry {_}")
@@ -102,7 +106,7 @@ class GetOnboardView(APIView):
 
 class UpdateOnboardView(APIView):
     permission_classes = [IsSuperUser]
-    
+
     def post(self, request):
         id = request.data.get("id")
         title = request.data.get("title")
@@ -164,7 +168,7 @@ class UpdateOnboardView(APIView):
                         "tags": onboard_item.tags,
                         "checklist": onboard_item.checklist,
                         "resources": onboard_item.resources,
-                    }
+                    },
                 },
                 status=status.HTTP_200_OK,
             )
@@ -177,11 +181,11 @@ class UpdateOnboardView(APIView):
 
 class ListOnboardView(APIView):
     permission_classes = [IsSuperUser]
-    
+
     def post(self, request):
         index_start = request.data.get("index_start")
         index_end = request.data.get("index_end")
-        
+
         if index_start is None or index_end is None:
             return Response(
                 {"error": "index_start and index_end must be present"},
@@ -196,15 +200,17 @@ class ListOnboardView(APIView):
                 {"error": "index_start and index_end must be integers"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         if index_start < 0 or index_end < index_start:
             return Response(
                 {"error": "Invalid index range"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         try:
-            onboard_items = OnboardCatalog.objects.all().order_by('id')[index_start:index_end]
+            onboard_items = OnboardCatalog.objects.all().order_by("id")[
+                index_start:index_end
+            ]
             data = [
                 {
                     "id": item.id,
@@ -223,7 +229,7 @@ class ListOnboardView(APIView):
 
 class DeleteOnboardView(APIView):
     permission_classes = [IsSuperUser]
-    
+
     def post(self, request):
         id = request.data.get("id")
 
@@ -254,3 +260,68 @@ class DeleteOnboardView(APIView):
             )
 
 
+class FinalizeOnboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        employee = request.user
+        employee.onboard_finalized = True
+        employee.save()
+        return Response(
+            {"message": "Onboard finalized successfully"},
+            status=status.HTTP_200_OK,
+        )
+
+
+class CompleteChecklistItemView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        checklist_item = request.data.get("checklist_item")
+
+        if not checklist_item:
+            return Response(
+                {"error": "checklist_item is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        employee = request.user
+
+        if checklist_item not in employee.onboard_completed_checklist_items:
+            if checklist_item not in employee.onboard_json["checklist"]:
+                return Response(
+                    {"error": "Checklist item not in original onboard checklist"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            employee.onboard_completed_checklist_items.append(checklist_item)
+            employee.save()
+
+        return Response(
+            {"message": "Checklist item marked as completed"},
+            status=status.HTTP_200_OK,
+        )
+
+
+class CheckFinalizeOnboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        employee = request.user
+        return Response(
+            {"finalized": employee.onboard_finalized},
+            status=status.HTTP_200_OK,
+        )
+
+
+class GetFinalizedOnboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        employee = request.user
+        return Response(
+            {
+                "onboard_data": employee.onboard_json,
+                "completed_items": employee.onboard_completed_checklist_items,
+            },
+            status=status.HTTP_200_OK,
+        )

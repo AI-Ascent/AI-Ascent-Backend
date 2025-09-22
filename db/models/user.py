@@ -31,6 +31,11 @@ class APIUser(AbstractUser):
 
     strengths_vector = VectorField(dimensions=384, null=True)
 
+    onboard_supp_hr_query = models.CharField("Supplementary query by the HR for the employee", blank=True, null=True)
+    onboard_finalized = models.BooleanField("If the employee's onboard items have been finalized by the employee", blank=True, null=True)
+    onboard_json = models.JSONField("The customized onboard items for this employee", blank=True, null=True) # Will have checklist, resources, explanation.
+    onboard_completed_checklist_items = ArrayField(models.TextField(), default=list)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
