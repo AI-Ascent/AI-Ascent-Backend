@@ -1,4 +1,3 @@
-import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,6 +6,7 @@ from api.permissions import IsSuperUser
 from db.models.onboard import OnboardCatalog
 from agents.agents.onboard import run_onboard_agent
 from db.models.user import APIUser
+from db.models.kpi import KPI
 from agents.agents.safety import check_prompt_safety, redact_pii
 
 
@@ -267,6 +267,11 @@ class FinalizeOnboardView(APIView):
         employee = request.user
         employee.onboard_finalized = True
         employee.save()
+
+        kpi = KPI.create_or_get_current_month()
+        kpi.assigned_onboard_tasks += len(employee.onboard_json["checklist"])
+        kpi.save()
+
         return Response(
             {"message": "Onboard finalized successfully"},
             status=status.HTTP_200_OK,
@@ -295,6 +300,10 @@ class CompleteChecklistItemView(APIView):
                 )
             employee.onboard_completed_checklist_items.append(checklist_item)
             employee.save()
+
+            kpi = KPI.create_or_get_current_month()
+            kpi.completed_onboard_tasks += 1
+            kpi.save()
 
         return Response(
             {"message": "Checklist item marked as completed"},
