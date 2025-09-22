@@ -173,3 +173,51 @@ class UpdateOnboardView(APIView):
                 {"error": f"Failed to update onboarding item: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class ListOnboardView(APIView):
+    permission_classes = [IsSuperUser]
+    
+    def post(self, request):
+        index_start = request.data.get("index_start")
+        index_end = request.data.get("index_end")
+        
+        if index_start is None or index_end is None:
+            return Response(
+                {"error": "index_start and index_end must be present"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            index_start = int(index_start)
+            index_end = int(index_end)
+        except ValueError:
+            return Response(
+                {"error": "index_start and index_end must be integers"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        if index_start < 0 or index_end < index_start:
+            return Response(
+                {"error": "Invalid index range"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        try:
+            onboard_items = OnboardCatalog.objects.all().order_by('id')[index_start:index_end]
+            data = [
+                {
+                    "id": item.id,
+                    "title": item.title,
+                    "specialization": item.specialization,
+                }
+                for item in onboard_items
+            ]
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to list onboarding items: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
