@@ -279,7 +279,74 @@ Authorization: Bearer <your_access_token>
     ```
   - Error (500): `{"error": "Failed to run onboard agent: [error details]"}`
 
-#### 7. Create Skill Item
+#### 7. Update Onboarding Item
+- **URL**: `/api/onboard/update/`
+- **Method**: `POST`
+- **Description**: Updates an existing onboarding catalog item. Requires superuser permissions. Send only the fields that need to be updated to reduce request size
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**:
+  ```json
+  {
+    "id": 1,
+    "title": "Updated Software Engineer", // Optional
+    "specialization": "Updated Backend", // Optional
+    "tags": ["python", "django", "api", "updated"], // Optional
+    "checklist": ["Collect laptop from IT", "Complete coding assessment", "Review company policies", "Setup development environment", "Updated task"], // Optional
+    "resources": ["https://docs.djangoproject.com/", "https://www.python.org/", "Backend service map", "Updated resource"] // Optional
+  }
+  ```
+- **Response**:
+  - Success (200): 
+    ```json
+    {
+      "message": "Onboarding item updated successfully",
+      "id": 1,
+      "data": {
+        "id": 1,
+        "title": "Updated Software Engineer",
+        "specialization": "Updated Backend",
+        "tags": ["python", "django", "api", "updated"],
+        "checklist": ["Collect laptop from IT", "Complete coding assessment", "Review company policies", "Setup development environment", "Updated task"],
+        "resources": ["https://docs.djangoproject.com/", "https://www.python.org/", "Backend service map", "Updated resource"]
+      }
+    }
+    ```
+  - Error (400): `{"error": "id is required"}` or `{"error": "tags/checklist/resources must be an array"}`
+  - Error (404): `{"error": "Onboarding item not found"}`
+  - Error (500): `{"error": "Failed to update onboarding item: [error details]"}`
+
+#### 8. List Onboarding Items
+- **URL**: `/api/onboard/list/`
+- **Method**: `POST`
+- **Description**: Lists onboarding catalog items with pagination. Requires superuser permissions.
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**:
+  ```json
+  {
+    "index_start": 0,
+    "index_end": 10
+  }
+  ```
+- **Response**:
+  - Success (200):
+    ```json
+    [
+      {
+        "id": 1,
+        "title": "Software Engineer",
+        "specialization": "Backend"
+      },
+      {
+        "id": 2,
+        "title": "Data Analyst",
+        "specialization": "Analytics"
+      }
+    ]
+    ```
+  - Error (400): `{"error": "index_start and index_end must be present"}` or `{"error": "index_start and index_end must be integers"}` or `{"error": "Invalid index range"}`
+  - Error (500): `{"error": "Failed to list onboarding items: [error details]"}`
+
+#### 9. Create Skill Item
 - **URL**: `/api/create-skill/`
 - **Method**: `POST`
 - **Description**: Creates a new skill catalog item with learning resources.
@@ -298,7 +365,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "title, type, and url are required"}` or `{"error": "tags must be an array"}`
   - Error (500): `{"error": "Failed to create skill item: [error details]"}`
 
-#### 8. Get Skill Recommendations
+#### 10. Get Skill Recommendations
 - **URL**: `/api/get-skill-recommendations/`
 - **Method**: `POST`
 - **Description**: Provides personalized skill development recommendations for the authenticated user based on their context and query using AI-powered semantic search.
@@ -333,7 +400,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "skill_query is required"}`
   - Error (500): `{"error": "Failed to get skill recommendations: [error details]"}`
 
-#### 9. Find Mentors
+#### 11. Find Mentors
 - **URL**: `/api/find-mentors/`
 - **Method**: `POST`
 - **Description**: Finds potential mentors within the organization whose strengths match the authenticated user's improvement areas.
@@ -368,7 +435,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "top_k must be a positive integer."}`
   - Error (500): `{"error": "Failed to find mentors: [error details]"}`
 
-#### 10. Coordinator Ask
+#### 12. Coordinator Ask
 - **URL**: `/api/coordinator-ask/`
 - **Method**: `POST`
 - **Description**: Processes a query from the authenticated user using the coordinator agent to provide coordinated responses with action items and resources. Includes prompt safety validation.
