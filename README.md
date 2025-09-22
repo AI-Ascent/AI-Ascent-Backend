@@ -173,7 +173,8 @@ Authorization: Bearer <your_access_token>
         "id": 1,
         "email": "user@example.com",
         "job_title": "Software Engineer",
-        "specialization": "Backend"
+        "specialization": "Backend",
+        "is_admin": false
       }
     }
     ```

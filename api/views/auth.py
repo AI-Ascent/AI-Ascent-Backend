@@ -54,6 +54,7 @@ class AuthenticateUser(APIView):
                         "email": user.email,
                         "job_title": user.job_title,
                         "specialization": user.specialization,
+                        "is_admin": user.is_superuser
                     }
                 }, status=status.HTTP_200_OK)
             else:
