@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from api.permissions import IsSuperUser
 from db.models.onboard import OnboardCatalog
 from agents.agents.onboard import run_onboard_agent
 from db.models.user import APIUser
@@ -95,5 +96,80 @@ class GetOnboardView(APIView):
         except Exception as e:
             return Response(
                 {"error": f"Failed to run onboard agent: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class UpdateOnboardView(APIView):
+    permission_classes = [IsSuperUser]
+    
+    def post(self, request):
+        id = request.data.get("id")
+        title = request.data.get("title")
+        specialization = request.data.get("specialization")
+        tags = request.data.get("tags")
+        checklist = request.data.get("checklist")
+        resources = request.data.get("resources")
+
+        if not id:
+            return Response(
+                {"error": "id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            onboard_item = OnboardCatalog.objects.get(id=id)
+        except OnboardCatalog.DoesNotExist:
+            return Response(
+                {"error": "Onboarding item not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if tags is not None and not isinstance(tags, list):
+            return Response(
+                {"error": "tags must be an array"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if checklist is not None and not isinstance(checklist, list):
+            return Response(
+                {"error": "checklist must be an array"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if resources is not None and not isinstance(resources, list):
+            return Response(
+                {"error": "resources must be an array"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            if title is not None:
+                onboard_item.title = title
+            if specialization is not None:
+                onboard_item.specialization = specialization
+            if tags is not None:
+                onboard_item.tags = tags
+            if checklist is not None:
+                onboard_item.checklist = checklist
+            if resources is not None:
+                onboard_item.resources = resources
+            onboard_item.save()
+            return Response(
+                {
+                    "message": "Onboarding item updated successfully",
+                    "id": onboard_item.id,
+                    "data": {
+                        "id": onboard_item.id,
+                        "title": onboard_item.title,
+                        "specialization": onboard_item.specialization,
+                        "tags": onboard_item.tags,
+                        "checklist": onboard_item.checklist,
+                        "resources": onboard_item.resources,
+                    }
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to update onboarding item: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
