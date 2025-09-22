@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from api.permissions import IsSuperUser
 from db.models.skill import SkillCatalog
 from agents.agents.skill import run_skill_agent
 from db.models.user import APIUser
@@ -97,5 +98,113 @@ class GetSkillRecommendationsView(APIView):
         except Exception as e:
             return Response(
                 {"error": f"Failed to get skill recommendations: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class UpdateSkillView(APIView):
+    permission_classes = [IsSuperUser]
+    
+    def post(self, request):
+        id = request.data.get("id")
+        title = request.data.get("title")
+        tags = request.data.get("tags")
+        skill_type = request.data.get("type")
+        url = request.data.get("url")
+
+        if not id:
+            return Response(
+                {"error": "id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            skill_item = SkillCatalog.objects.get(id=id)
+        except SkillCatalog.DoesNotExist:
+            return Response(
+                {"error": "Skill item not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if tags is not None and not isinstance(tags, list):
+            return Response(
+                {"error": "tags must be an array"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            if title is not None:
+                skill_item.title = title
+            if tags is not None:
+                skill_item.tags = tags
+            if skill_type is not None:
+                skill_item.type = skill_type
+            if url is not None:
+                skill_item.url = url
+            skill_item.save()
+            return Response(
+                {
+                    "message": "Skill item updated successfully",
+                    "id": skill_item.id,
+                    "data": {
+                        "id": skill_item.id,
+                        "title": skill_item.title,
+                        "tags": skill_item.tags,
+                        "type": skill_item.type,
+                        "url": skill_item.url,
+                    }
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to update skill item: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class ListSkillView(APIView):
+    permission_classes = [IsSuperUser]
+    
+    def post(self, request):
+        index_start = request.data.get("index_start")
+        index_end = request.data.get("index_end")
+        
+        if index_start is None or index_end is None:
+            return Response(
+                {"error": "index_start and index_end must be present"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            index_start = int(index_start)
+            index_end = int(index_end)
+        except ValueError:
+            return Response(
+                {"error": "index_start and index_end must be integers"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        if index_start < 0 or index_end < index_start:
+            return Response(
+                {"error": "Invalid index range"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        try:
+            skill_items = SkillCatalog.objects.all().order_by('id')[index_start:index_end]
+            data = [
+                {
+                    "id": item.id,
+                    "title": item.title,
+                    "type": item.type,
+                    "url": item.url
+                }
+                for item in skill_items
+            ]
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to list skill items: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
