@@ -401,7 +401,74 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "skill_query is required"}`
   - Error (500): `{"error": "Failed to get skill recommendations: [error details]"}`
 
-#### 11. Find Mentors
+#### 11. Update Skill Item
+- **URL**: `/api/update-skill/`
+- **Method**: `POST`
+- **Description**: Updates an existing skill catalog item. Requires superuser permissions.
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**:
+  ```json
+  {
+    "id": 1,
+    "title": "Updated Python Programming",
+    "tags": ["python", "programming", "beginner", "updated"],
+    "type": "course",
+    "url": "https://example.com/updated-python-tutorial"
+  }
+  ```
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "message": "Skill item updated successfully",
+      "id": 1,
+      "data": {
+        "id": 1,
+        "title": "Updated Python Programming",
+        "tags": ["python", "programming", "beginner", "updated"],
+        "type": "course",
+        "url": "https://example.com/updated-python-tutorial"
+      }
+    }
+    ```
+  - Error (400): `{"error": "id is required"}` or `{"error": "tags must be an array"}`
+  - Error (404): `{"error": "Skill item not found"}`
+  - Error (500): `{"error": "Failed to update skill item: [error details]"}`
+
+#### 12. List Skill Items
+- **URL**: `/api/list-skill/`
+- **Method**: `POST`
+- **Description**: Lists skill catalog items with pagination. Requires superuser permissions.
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**:
+  ```json
+  {
+    "index_start": 0,
+    "index_end": 10
+  }
+  ```
+- **Response**:
+  - Success (200):
+    ```json
+    [
+      {
+        "id": 1,
+        "title": "Python Programming",
+        "type": "tutorial",
+        "url": "https://example.com/python-tutorial"
+      },
+      {
+        "id": 2,
+        "title": "Data Science with Python",
+        "type": "course",
+        "url": "https://example.com/data-science-course"
+      }
+    ]
+    ```
+  - Error (400): `{"error": "index_start and index_end must be present"}` or `{"error": "index_start and index_end must be integers"}` or `{"error": "Invalid index range"}`
+  - Error (500): `{"error": "Failed to list skill items: [error details]"}`
+
+#### 13. Find Mentors
 - **URL**: `/api/find-mentors/`
 - **Method**: `POST`
 - **Description**: Finds potential mentors within the organization whose strengths match the authenticated user's improvement areas.
@@ -436,7 +503,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "top_k must be a positive integer."}`
   - Error (500): `{"error": "Failed to find mentors: [error details]"}`
 
-#### 12. Coordinator Ask
+#### 14. Coordinator Ask
 - **URL**: `/api/coordinator-ask/`
 - **Method**: `POST`
 - **Description**: Processes a query from the authenticated user using the coordinator agent to provide coordinated responses with action items and resources. Includes prompt safety validation.
