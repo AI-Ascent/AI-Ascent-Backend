@@ -694,6 +694,76 @@ Authorization: Bearer <your_access_token>
   - Error (406): `{"message": "Prompt is not safe for further processing or LLM!"}`
   - Error (500): `{"error": "Failed to process query: [error details]"}`
 
+## HR Admin Endpoints
+
+### Global Skill Trends
+- **URL**: `/api/global-skill-trends/`
+- **Method**: `POST`
+- **Description**: Analyzes global skill interest trends across all users using vector similarity clustering. Requires superuser permissions.
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**:
+  ```json
+  {
+    "timeframe_days": 7,
+    "top_n": 10
+  }
+  ```
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "computed_at": "2025-09-23T20:23:01Z",
+      "timeframe_days": 7,
+      "clusters": [
+        {
+          "representative_title": "Machine Learning",
+          "popularity_users": 15,
+          "sample_titles": ["ML Algorithms", "Machine Learning Basics", "AI/ML"]
+        }
+      ],
+      "stats": {
+        "rows_processed": 45,
+        "total_rows": 45
+      }
+    }
+    ```
+  - Error (400): `{"error": "timeframe_days must be an integer"}` or `{"error": "top_n must be an integer"}`
+  - Error (500): `{"error": "Internal server error"}`
+
+### Global Negative Feedback Trends
+- **URL**: `/api/global-negative-feedback-trends/`
+- **Method**: `POST`
+- **Description**: Analyzes global negative feedback trends across all users using vector similarity clustering. Requires superuser permissions.
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**:
+  ```json
+  {
+    "timeframe_days": 7,
+    "top_n": 10
+  }
+  ```
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "computed_at": "2025-09-23T20:23:01Z",
+      "timeframe_days": 7,
+      "clusters": [
+        {
+          "representative_feedback": "Needs improvement in communication skills",
+          "popularity_users": 8,
+          "sample_feedbacks": [
+            "Communication skills need development",
+            "Should work on presentation abilities",
+            "Improve verbal communication"
+          ]
+        }
+      ]
+    }
+    ```
+  - Error (400): `{"error": "timeframe_days must be an integer"}` or `{"error": "top_n must be an integer"}`
+  - Error (500): `{"error": "Internal server error"}`
+
 ## Models
 
 ### APIUser
@@ -737,6 +807,12 @@ Authorization: Bearer <your_access_token>
 - **flagged_feedbacks_count**: Number of feedbacks flagged as biased or inappropriate
 - **total_feedbacks_count**: Total number of feedbacks added to the system
 - **pii_redacted_count**: Number of PII (Personal Identifiable Information) instances redacted
+
+### NegativeFeedback
+- **user**: Foreign key to APIUser (who provided the feedback)
+- **feedback_text**: Text of the negative feedback insight
+- **feedback_vector**: Vector embedding for similarity clustering (384 dimensions)
+- **created_at**: Timestamp when the feedback was created
 
 ## Setup
 

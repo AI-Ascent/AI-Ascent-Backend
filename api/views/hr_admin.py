@@ -136,7 +136,6 @@ class GlobalSkillTrendsView(APIView):
 			result.append({
 				"representative_title": best_title,
 				"popularity_users": user_count,
-				"members_count": len(cl["members"]),
 				"sample_titles": sample_titles,
 			})
 
@@ -277,7 +276,6 @@ class GlobalNegativeFeedbackTrendsView(APIView):
 			result.append({
 				"representative_feedback": best_feedback,
 				"popularity_users": user_count,
-				"members_count": len(cl["members"]),
 				"sample_feedbacks": sample_feedbacks,
 			})
 
