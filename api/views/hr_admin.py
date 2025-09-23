@@ -6,6 +6,8 @@ from django.utils import timezone
 from datetime import timedelta
 from db.models.skill import InterestedSkill
 from db.models.feedback import NegativeFeedback
+from db.models.kpi import KPI
+from datetime import date
 import numpy as np
 
 SIM_THRESHOLD = 0.85
@@ -288,4 +290,54 @@ class GlobalNegativeFeedbackTrendsView(APIView):
 			"timeframe_days": timeframe_days,
 			"clusters": result,
 		}, status=status.HTTP_200_OK)
+
+
+class GetKPI(APIView):
+	"""
+	Returns KPI data for the last 3 months. If no data exists for a month, returns empty data with correct format.
+	"""
+	permission_classes = [IsSuperUser]
+
+	def post(self, request):
+		today = date.today()
+		current_year = today.year
+		current_month = today.month
+		
+		months = []
+		for i in range(3):
+			month = current_month - i
+			year = current_year
+			if month <= 0:
+				month += 12
+				year -= 1
+			months.append((year, month))
+		
+		data_list = []
+		for year, month in months:
+			try:
+				kpi = KPI.objects.get(year=year, month=month)
+				data = {
+					'year': kpi.year,
+					'month': kpi.month,
+					'completed_onboard_tasks': kpi.completed_onboard_tasks,
+					'assigned_onboard_tasks': kpi.assigned_onboard_tasks,
+					'prompt_injection_count': kpi.prompt_injection_count,
+					'flagged_feedbacks_count': kpi.flagged_feedbacks_count,
+					'total_feedbacks_count': kpi.total_feedbacks_count,
+					'pii_redacted_count': kpi.pii_redacted_count,
+				}
+			except KPI.DoesNotExist:
+				data = {
+					'year': year,
+					'month': month,
+					'completed_onboard_tasks': 0,
+					'assigned_onboard_tasks': 0,
+					'prompt_injection_count': 0,
+					'flagged_feedbacks_count': 0,
+					'total_feedbacks_count': 0,
+					'pii_redacted_count': 0,
+				}
+			data_list.append(data)
+		
+		return Response({"data": data_list}, status=status.HTTP_200_OK)
 
