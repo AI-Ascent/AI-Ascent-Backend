@@ -1,5 +1,5 @@
 from django.urls import path
-from api.views.skill import CreateSkillView, GetSkillRecommendationsView, UpdateSkillView, ListSkillView, DeleteSkillView
+from api.views.skill import CreateSkillView, GetSkillRecommendationsView, UpdateSkillView, ListSkillView, DeleteSkillView, AddInterestedSkillView
 
 urlpatterns = [
     path('create-skill/', CreateSkillView.as_view(), name='create-skill'),
@@ -7,4 +7,5 @@ urlpatterns = [
     path('update-skill/', UpdateSkillView.as_view(), name='update-skill'),
     path('list-skill/', ListSkillView.as_view(), name='list-skill'),
     path('delete-skill/', DeleteSkillView.as_view(), name='delete-skill'),
+    path('interested/add/', AddInterestedSkillView.as_view(), name='add-interested-skill'),
 ]

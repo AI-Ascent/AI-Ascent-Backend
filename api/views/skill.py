@@ -3,12 +3,16 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsSuperUser
-from db.models.skill import SkillCatalog
+from db.models.skill import SkillCatalog, InterestedSkill
 from agents.agents.skill import run_skill_agent
 from db.models.user import APIUser
 from agents.agents.safety import check_prompt_safety, redact_pii
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from db.models.embeddings import embeddings
+from pgvector.django import CosineDistance
+from django.db import transaction
+from django.utils import timezone
 
 
 class CreateSkillView(APIView):
@@ -240,3 +244,71 @@ class DeleteSkillView(APIView):
                 {"error": f"Failed to delete skill item: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class AddInterestedSkillView(APIView):
+    """Accept a single skill item from frontend matching agent shape and add to user's InterestedSkill with per-user dedupe.
+
+    Expected body:
+      - title: str (required)
+      - description: str (required)
+      - learning_outcomes: list[str] (optional)
+      - resources: list[ { title, url, type } ] (optional)
+
+    Server sets set_at = now. Dedupe via per-user vector similarity on title only.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        title = request.data.get("title")
+        description = request.data.get("description", "")
+        learning_outcomes = request.data.get("learning_outcomes", [])
+        resources = request.data.get("resources", [])
+
+        if not title or not isinstance(title, str):
+            return Response({"error": "title is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(description, str):
+            return Response({"error": "description must be a string"}, status=status.HTTP_400_BAD_REQUEST)
+        if learning_outcomes is not None and not isinstance(learning_outcomes, list):
+            return Response({"error": "learning_outcomes must be an array of strings"}, status=status.HTTP_400_BAD_REQUEST)
+        if resources is not None and not isinstance(resources, list):
+            return Response({"error": "resources must be an array"}, status=status.HTTP_400_BAD_REQUEST)
+
+        title_vec = embeddings.embed_query(title)
+
+        # Vector similarity dedupe for this user
+        top = (
+            InterestedSkill.objects.filter(user=user, title_vector__isnull=False)
+            .annotate(distance=CosineDistance("title_vector", title_vec))
+            .order_by("distance")
+            .first()
+        )
+
+        SIM_THRESHOLD = 0.90
+        if top is not None:
+            similarity = 1 - float(getattr(top, "distance", 1.0))
+            if similarity >= SIM_THRESHOLD:
+                # Update set_at and return existing
+                with transaction.atomic():
+                    top.set_at = timezone.now()
+                    top.save(update_fields=["set_at"])
+                return Response({
+                    "interested_skill_id": top.id,
+                    "message": "deduped by similarity",
+                    "similarity": round(similarity, 4),
+                }, status=status.HTTP_200_OK)
+
+        obj = InterestedSkill.objects.create(
+            user=user,
+            skill_title=title,
+            skill_description=description,
+            learning_outcomes=learning_outcomes or [],
+            resources=resources or [],
+            title_vector=title_vec
+        )
+
+        return Response({
+            "message": "Added skill",
+            "interested_skill_id": obj.id,
+        }, status=status.HTTP_201_CREATED)

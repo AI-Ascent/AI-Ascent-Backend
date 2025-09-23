@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from pgvector.django import VectorField 
 from db.models.embeddings import embeddings
+from django.utils import timezone
+from django.conf import settings
 
 class SkillCatalog(models.Model):
     title = models.CharField(max_length=256, verbose_name="Skill Title")
@@ -25,3 +27,24 @@ class SkillCatalog(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class InterestedSkill(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    set_at = models.DateTimeField(default=timezone.now)
+
+    # Fields mirroring skill agent item shape
+    skill_title = models.TextField()
+    skill_description = models.TextField(blank=True)
+    learning_outcomes = ArrayField(models.TextField(), default=list)
+    resources = models.JSONField(default=list)
+
+    title_vector = VectorField(dimensions=384, null=True)
+
+    class Meta:
+        pass
+
+    def save(self, *args, **kwargs):
+        if not self.title_vector:
+            self.title_vector = embeddings.embed_query(self.skill_title)
+        super().save(*args, **kwargs)
