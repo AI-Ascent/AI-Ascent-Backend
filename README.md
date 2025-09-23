@@ -661,6 +661,10 @@ Authorization: Bearer <your_access_token>
 - **month**: Month for KPI tracking
 - **completed_onboard_tasks**: Count of onboard tasks completed by employees
 - **assigned_onboard_tasks**: Total number of onboard tasks assigned to employees
+- **prompt_injection_count**: Number of prompt injection attempts detected
+- **flagged_feedbacks_count**: Number of feedbacks flagged as biased or inappropriate
+- **total_feedbacks_count**: Total number of feedbacks added to the system
+- **pii_redacted_count**: Number of PII (Personal Identifiable Information) instances redacted
 
 ## Setup
 
