@@ -563,7 +563,79 @@ Authorization: Bearer <your_access_token>
   - Error (404): `{"error": "Skill item not found"}`
   - Error (500): `{"error": "Failed to delete skill item: [error details]"}`
 
-#### 14. Find Mentors
+#### 14. Add Interested Skill
+- **URL**: `/api/interested/add/`
+- **Method**: `POST`
+- **Description**: Adds a skill to the authenticated user's list of interested skills for personalized recommendations.
+- **Authentication**: Bearer token required
+- **Request Body**:
+  ```json
+  {
+    "skill_title": "Machine Learning",
+    "skill_description": "Learn machine learning algorithms and techniques",
+    "learning_outcomes": ["Understand supervised learning", "Implement ML models"],
+    "resources": [
+      {
+        "title": "Machine Learning Course",
+        "url": "https://example.com/ml-course",
+        "type": "course"
+      }
+    ]
+  }
+  ```
+- **Response**:
+  - Success (201): `{"message": "Added skill", "interested_skill_id": 1}`
+  - Error (400): `{"error": "skill_title, skill_description, learning_outcomes, and resources are required"}`
+  - Error (500): `{"error": "Failed to add interested skill: [error details]"}`
+
+#### 15. Get Interested Skills
+- **URL**: `/api/interested/list/`
+- **Method**: `POST`
+- **Description**: Retrieves the authenticated user's list of interested skills, ordered by most recently added.
+- **Authentication**: Bearer token required
+- **Request Body**: None (uses authenticated user)
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "skills": [
+        {
+          "id": 1,
+          "skill_title": "Machine Learning",
+          "skill_description": "Learn machine learning algorithms and techniques",
+          "learning_outcomes": ["Understand supervised learning", "Implement ML models"],
+          "resources": [
+            {
+              "title": "Machine Learning Course",
+              "url": "https://example.com/ml-course",
+              "type": "course"
+            }
+          ],
+          "set_at": "2025-09-23T17:53:40Z"
+        }
+      ]
+    }
+    ```
+  - Error (500): `{"error": "Internal server error"}`
+
+#### 16. Delete Interested Skill
+- **URL**: `/api/interested/delete/`
+- **Method**: `POST`
+- **Description**: Removes a skill from the authenticated user's list of interested skills.
+- **Authentication**: Bearer token required
+- **Request Body**:
+  ```json
+  {
+    "id": 1
+  }
+  ```
+- **Response**:
+  - Success (200): `{"message": "Interested skill deleted successfully"}`
+  - Error (400): `{"error": "id is required"}`
+  - Error (404): `{"error": "Interested skill not found"}`
+  - Error (500): `{"error": "Failed to delete interested skill: [error details]"}`
+
+#### 17. Find Mentors
 - **URL**: `/api/find-mentors/`
 - **Method**: `POST`
 - **Description**: Finds potential mentors within the organization whose strengths match the authenticated user's improvement areas.
@@ -598,7 +670,7 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "top_k must be a positive integer."}`
   - Error (500): `{"error": "Failed to find mentors: [error details]"}`
 
-#### 15. Coordinator Ask
+#### 18. Coordinator Ask
 - **URL**: `/api/coordinator-ask/`
 - **Method**: `POST`
 - **Description**: Processes a query from the authenticated user using the coordinator agent to provide coordinated responses with action items and resources. Includes prompt safety validation.
