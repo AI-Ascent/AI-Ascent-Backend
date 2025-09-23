@@ -16,8 +16,8 @@ The API Backend for AI Ascent SAP Hackathon.
 
 The backend uses AI agents powered by LangChain for various processing tasks.
 
-### Feedbac#### 15. Get Skill Recommendations #### 16. Update Skill Itemgent
-- #### 17. List Skill Itemsollect a#### 18. Delete S#### 19. Find Mentorsill Itemd stor#### 20. Coordinator Ask user feedback
+### Feedback Agent
+- Collect and store user feedback
 - AI-powered classification of feedback into strengths and improvements using sentiment analysis
 - Generation of actionable insights and growth tips from classified feedback
 - Bias filtering to ensure fair and inclusive feedback analysis
