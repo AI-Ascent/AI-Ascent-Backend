@@ -734,8 +734,8 @@ Authorization: Bearer <your_access_token>
 - **Request Body**:
   ```json
   {
-    "timeframe_days": 7,
-    "top_n": 10
+    "timeframe_days": 7, // optional
+    "top_n": 10 // optional
   }
   ```
 - **Response**:
