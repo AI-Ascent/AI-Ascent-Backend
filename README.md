@@ -704,8 +704,8 @@ Authorization: Bearer <your_access_token>
 - **Request Body**:
   ```json
   {
-    "timeframe_days": 7,
-    "top_n": 10
+    "timeframe_days": 7, // optional - default 7
+    "top_n": 10// optional - default 10
   }
   ```
 - **Response**:
@@ -720,11 +720,7 @@ Authorization: Bearer <your_access_token>
           "popularity_users": 15,
           "sample_titles": ["ML Algorithms", "Machine Learning Basics", "AI/ML"]
         }
-      ],
-      "stats": {
-        "rows_processed": 45,
-        "total_rows": 45
-      }
+      ]
     }
     ```
   - Error (400): `{"error": "timeframe_days must be an integer"}` or `{"error": "top_n must be an integer"}`
