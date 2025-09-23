@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from db.models.kpi import KPI
 from db.models.user import APIUser
+from db.models.feedback import NegativeFeedback
 from agents.agents.feedback import classify_feedback, summarise_feedback_points
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -13,7 +14,7 @@ import json
 import threading
 
 
-def process_feedback_background(user_email: str):
+def process_feedback_background(user_email: str, new_feedbacks: list = []):
     """
     Background function to process feedback summarization.
     This runs in a separate thread to avoid blocking the API response.
@@ -21,10 +22,15 @@ def process_feedback_background(user_email: str):
     try:
         user = APIUser.objects.get(email=user_email)
         classify_feedback(user.feedbacks, True)
-        summary = summarise_feedback_points(user.feedbacks)
-        user.strengths = summary["strengths_insights"]
-        user.improvements = summary["improvements_insights"]
+        summary = summarise_feedback_points(new_feedbacks)
+        user.strengths.extend(summary["strengths_insights"])
+        user.improvements.extend(summary["improvements_insights"])
         user.save()
+        
+        # Save each new improvement insight as a NegativeFeedback entry
+        for improvement in summary["improvements_insights"]:
+            NegativeFeedback.objects.create(user=user, feedback_text=improvement)
+        
         print(f"Successfully processed feedback for {user_email}")
     except Exception as e:
         print(f"Background task failed to process feedback for {user_email}: {str(e)}")
@@ -67,7 +73,7 @@ class AddFeedbackView(APIView):
             # Start background processing of feedback summarization
             thread = threading.Thread(
                 target=process_feedback_background, 
-                args=(email,),
+                args=(email,new_feedbacks),
                 daemon=True
             )
             thread.start()
