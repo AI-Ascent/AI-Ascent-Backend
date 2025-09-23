@@ -764,6 +764,52 @@ Authorization: Bearer <your_access_token>
   - Error (400): `{"error": "timeframe_days must be an integer"}` or `{"error": "top_n must be an integer"}`
   - Error (500): `{"error": "Internal server error"}`
 
+### Get KPI Data
+- **URL**: `/api/kpi/`
+- **Method**: `POST`
+- **Description**: Retrieves KPI data for the last 3 months including onboarding metrics, security statistics, and feedback analytics. Requires superuser permissions.
+- **Authentication**: Bearer token required (superuser only)
+- **Request Body**: None (uses current date to calculate last 3 months)
+- **Response**:
+  - Success (200):
+    ```json
+    {
+      "data": [
+        {
+          "year": 2025,
+          "month": 9,
+          "completed_onboard_tasks": 45,
+          "assigned_onboard_tasks": 67,
+          "prompt_injection_count": 3,
+          "flagged_feedbacks_count": 12,
+          "total_feedbacks_count": 156,
+          "pii_redacted_count": 8
+        },
+        {
+          "year": 2025,
+          "month": 8,
+          "completed_onboard_tasks": 38,
+          "assigned_onboard_tasks": 52,
+          "prompt_injection_count": 1,
+          "flagged_feedbacks_count": 8,
+          "total_feedbacks_count": 134,
+          "pii_redacted_count": 5
+        },
+        {
+          "year": 2025,
+          "month": 7,
+          "completed_onboard_tasks": 0,
+          "assigned_onboard_tasks": 0,
+          "prompt_injection_count": 0,
+          "flagged_feedbacks_count": 0,
+          "total_feedbacks_count": 0,
+          "pii_redacted_count": 0
+        }
+      ]
+    }
+    ```
+  - Error (500): `{"error": "Internal server error"}`
+
 ## Models
 
 ### APIUser
