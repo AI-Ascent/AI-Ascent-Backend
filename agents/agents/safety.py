@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from huggingface_hub import login
 import os
 import re
+from db.models.kpi import KPI
 
 load_dotenv()
 login(token=os.getenv("HF_TOKEN"))
@@ -105,6 +106,9 @@ def check_prompt_safety(prompt: str) -> bool:
     result = get_prompt_guarder_classifier()(prompt)
 
     if result[0]["label"] == "INJECTION":
+        kpi = KPI.create_or_get_current_month()
+        kpi.prompt_injection_count += 1
+        kpi.save()
         return False
     else:
         return True
@@ -122,15 +126,19 @@ def redact_pii(prompt: str) -> str:
         str: The prompt with PII replaced by placeholders.
     """
     # Regex for emails
-    prompt = re.sub(
+    prompt, email_count = re.subn(
         r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
         "[REDACTED_EMAIL]",
         prompt,
     )
 
     # Regex for phone numbers (handles various common formats)
-    prompt = re.sub(
+    prompt, phone_count = re.subn(
         r"(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})", "[REDACTED_PHONE]", prompt
     )
+
+    kpi = KPI.create_or_get_current_month()
+    kpi.pii_redacted_count += email_count + phone_count
+    kpi.save()
 
     return prompt

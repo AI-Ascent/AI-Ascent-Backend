@@ -7,6 +7,7 @@ from db.models.embeddings import sentiment_analysis
 from agents.agents.safety import filter_feedback_for_bias
 from django.core.cache import cache
 from agents.agents.model_config import FEEDBACK_MODEL
+from db.models.kpi import KPI
 
 FEEDBACK_LLM = None
 INSIGHTS_LLM = None
@@ -29,13 +30,19 @@ def get_feedback_llm():
     return FEEDBACK_LLM
 
 
-def classify_feedback(feedbacks: list):
+def classify_feedback(feedbacks: list, save_kpi: bool = False):
     cache_key = f"classify_feedback_{hash(tuple(feedbacks))}"
     cached_result = cache.get(cache_key)
     if cached_result:
         return cached_result
 
-    cleaned_feedbacks = filter_feedback_for_bias(feedbacks)["safe_feedback"]
+    classified_feedbacks = filter_feedback_for_bias(feedbacks)
+    if save_kpi:
+        kpi = KPI.create_or_get_current_month()
+        kpi.flagged_feedbacks_count += len(classified_feedbacks["flagged_feedback"])
+        kpi.save()
+
+    cleaned_feedbacks = classified_feedbacks["safe_feedback"]
     classified = {"strengths": [], "improvements": []}
 
     for text in cleaned_feedbacks:

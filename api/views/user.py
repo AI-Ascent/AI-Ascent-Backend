@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from db.models.kpi import KPI
 from db.models.user import APIUser
 from agents.agents.feedback import classify_feedback, summarise_feedback_points
 from django.utils.decorators import method_decorator
@@ -19,6 +20,7 @@ def process_feedback_background(user_email: str):
     """
     try:
         user = APIUser.objects.get(email=user_email)
+        classify_feedback(user.feedbacks, True)
         summary = summarise_feedback_points(user.feedbacks)
         user.strengths = summary["strengths_insights"]
         user.improvements = summary["improvements_insights"]
@@ -54,9 +56,14 @@ class AddFeedbackView(APIView):
         try:
             user = APIUser.objects.get(email=email)
 
-            user.feedbacks.extend([fi for fi in feedback.split(".") if fi.strip()])
+            new_feedbacks = [fi for fi in feedback.split(".") if fi.strip()]
+            user.feedbacks.extend(new_feedbacks)
             user.save()
             
+            kpi = KPI.create_or_get_current_month()
+            kpi.total_feedbacks_count += len(new_feedbacks)
+            kpi.save()
+
             # Start background processing of feedback summarization
             thread = threading.Thread(
                 target=process_feedback_background, 

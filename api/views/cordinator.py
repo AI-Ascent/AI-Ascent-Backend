@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from agents.agents.cordinator import invoke_coordinator
-from agents.agents.safety import check_prompt_safety
+from agents.agents.safety import check_prompt_safety, redact_pii
 from db.models.user import APIUser
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -29,6 +29,8 @@ class CoordinatorView(APIView):
                 {"message": "Prompt is not safe for further processing or LLM!"},
                 status=status.HTTP_406_NOT_ACCEPTABLE,
             )
+
+        query = redact_pii(query)
 
         try:
             # Call the coordinator agent
