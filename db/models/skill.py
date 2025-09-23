@@ -45,6 +45,6 @@ class InterestedSkill(models.Model):
         pass
 
     def save(self, *args, **kwargs):
-        if not self.title_vector:
+        if self.title_vector is None:
             self.title_vector = embeddings.embed_query(self.skill_title)
         super().save(*args, **kwargs)

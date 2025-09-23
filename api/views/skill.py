@@ -312,3 +312,47 @@ class AddInterestedSkillView(APIView):
             "message": "Added skill",
             "interested_skill_id": obj.id,
         }, status=status.HTTP_201_CREATED)
+
+
+class GetInterestedSkillsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        interested_skills = InterestedSkill.objects.filter(user=user).order_by('-set_at')
+        data = [
+            {
+                "id": skill.id,
+                "skill_title": skill.skill_title,
+                "skill_description": skill.skill_description,
+                "learning_outcomes": skill.learning_outcomes,
+                "resources": skill.resources,
+                "set_at": skill.set_at,
+            }
+            for skill in interested_skills
+        ]
+        return Response({"skills": data}, status=status.HTTP_200_OK)
+
+
+class DeleteInterestedSkillView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        skill_id = request.data.get("id")
+
+        if not skill_id:
+            return Response({"error": "id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            skill = InterestedSkill.objects.get(id=skill_id, user=user)
+        except InterestedSkill.DoesNotExist:
+            return Response({"error": "Interested skill not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            skill.delete()
+            return Response({"message": "Interested skill deleted successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": f"Failed to delete interested skill: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
