@@ -143,6 +143,7 @@ def find_mentors_for_improvements(user_email: str, top_k: int = 3) -> List[Dict]
             APIUser.objects.filter(
                 ~Q(email=user_email),  # Exclude the current user
                 strengths_vector__isnull=False,  # Only users with strengths vectors
+                job_level__gte=current_user.job_level,  # Only users with equal or higher job level
             )
             .annotate(similarity=CosineDistance("strengths_vector", imp_vec))
             .order_by("similarity")[:top_k]

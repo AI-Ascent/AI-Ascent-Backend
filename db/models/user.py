@@ -23,6 +23,7 @@ class APIUser(AbstractUser):
     email = models.EmailField(unique=True)
     job_title = models.CharField("Job Title of the employee", null=True)
     specialization = models.CharField("Specialization of the employee", blank=True, null=True)
+    job_level = models.IntegerField("The job level of the person", default=1)
 
     feedbacks = ArrayField(models.CharField(max_length=1000), default=list)
 
