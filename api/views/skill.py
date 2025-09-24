@@ -261,8 +261,8 @@ class AddInterestedSkillView(APIView):
 
     def post(self, request):
         user = request.user
-        title = request.data.get("title")
-        description = request.data.get("description", "")
+        title = request.data.get("skill_title")
+        description = request.data.get("skill_description", "")
         learning_outcomes = request.data.get("learning_outcomes", [])
         resources = request.data.get("resources", [])
 
