@@ -202,6 +202,7 @@ class ListSkillView(APIView):
                     "id": item.id,
                     "title": item.title,
                     "type": item.type,
+                    "url": item.url
                 }
                 for item in skill_items
             ]
