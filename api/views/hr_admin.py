@@ -10,7 +10,7 @@ from db.models.kpi import KPI
 from datetime import date
 import numpy as np
 
-SIM_THRESHOLD = 0.85
+SIM_THRESHOLD = 0.65
 
 class GlobalSkillTrendsView(APIView):
 	"""
