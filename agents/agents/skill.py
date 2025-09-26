@@ -28,7 +28,7 @@ Use the skill catalog search tools (find_similar_skill_titles, find_similar_skil
 
 Use the tavily_search tool a maximum of twice. If the skill catalog has no relevant information or you need specific current data that isn't available internally.
 
-When providing recommendations, consider any user feedback insights provided in the query to suggest skills that address their improvement areas and build upon their strengths.
+When providing recommendations, consider any user feedback insights provided in the query to suggest additional skills that address their improvement areas and build upon their strengths.
 
 Compile all gathered information into a json string (not actual json object but json string) format. The json string should have a 'skills' array, where each item has 'title', 'description', 'learning_outcomes', and a 'resources' array. Each resource should have 'title', 'url', and 'type'. Also include an 'explanation' string.
 
