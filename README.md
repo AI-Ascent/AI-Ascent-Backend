@@ -1,4 +1,4 @@
-# AI Ascent Backend
+# AI Ascent Backend - 2nd Runner-Up in NTUxSAP Hackathon
 
 The API Backend for AI Ascent SAP Hackathon.
 
